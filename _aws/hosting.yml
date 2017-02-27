@@ -82,7 +82,7 @@ Resources:
       DefinitionUri: ./webhook-swagger.yml
       StageName: Prod
       Variables:
-        GithubLambdaName: !Ref GithubHookFunction
+        GithubLambdaName: !Ref GithubHookFunc
     Tags:
       - Key: Name
         Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Webhook API ] ]
@@ -95,8 +95,8 @@ Resources:
         Value: public
       - Key: app
         Value: Web Community CDN
-    DependsOn: [GithubHookFunction]
-  GithubHookFunction:
+    DependsOn: [GithubHookFunc]
+  GithubHookFunc:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./../
