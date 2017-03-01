@@ -26,9 +26,13 @@ module.exports = function runner(libraries, runnerConfig) {
     const workPath = path.join(tmpdir, 'work');
     const stagingPath = path.join(tmpdir, 's3-staging');
 
+    let dryRun = runnerConfig.dryRun;
 
     //Step 1 - Build the config
     return CdnConfig.loadFromConfig(libraries).then(cfg => {
+        if (dryRun) {
+            cfg.dryRun = true;
+        }
         // Step 2 - Build the filesystem
         return buildFilesystem(cfg, contentPath, workPath).then(changes =>
             // Step 3 - Commit content to Github

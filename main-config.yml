@@ -7,3 +7,17 @@ byu-card:
   source: github:byuweb/byu-card
 byu-calendar-tile:
   source: github:byuweb/byu-calendar-tile
+polyfills:
+  source: npm:skatejs-web-components
+  options:
+    versions:
+      "^5.0.0":
+        resources:
+          - src: dist/index-with-deps*.js
+            dest: ./
+            rename:
+             - regex: index-with-deps(\.min)?\.js
+               to: polyfills$1.js
+        entrypoints:
+          polyfills.js: 'Polyfill bundle'
+          polyfills.min.js: 'Minified Polyfill bundle'

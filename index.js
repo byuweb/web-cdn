@@ -8,7 +8,8 @@ const path = require('path');
 yaml.readPromise('./main-config.yml')
     //Now run it!
     .then(config => runner(config, {
-        tmpdir: path.join(process.cwd(), '.tmp')
+        tmpdir: path.join(process.cwd(), '.tmp'),
+        dryRun: true
     }))
     .catch(err => console.error(err));
 
