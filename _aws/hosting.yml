@@ -102,7 +102,7 @@ Resources:
       CodeUri: ./../
       Handler: lambda/github-hook.handler
       Runtime: nodejs4.3
-      MemorySize: 256
+      MemorySize: 384
       Timeout: 60
       Role:
         Fn::ImportValue: !Sub "${RolesStackName}-BuilderLambdaRole"

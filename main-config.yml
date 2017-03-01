@@ -7,7 +7,7 @@ byu-card:
   source: github:byuweb/byu-card
 byu-calendar-tile:
   source: github:byuweb/byu-calendar-tile
-polyfills:
+web-component-polyfills:
   source: npm:skatejs-web-components
   options:
     versions:
