@@ -2,6 +2,7 @@
 
 const CdnConfig = require('./lib/cdn-config');
 const path = require('path');
+const checkoutRepos = require('./lib/steps/checkout-repositories');
 const buildFilesystem = require('./lib/steps/build-filesystem');
 const commitContent = require('./lib/steps/commit-content');
 const pushToS3 = require('./lib/steps/push-to-s3');
@@ -33,13 +34,17 @@ module.exports = function runner(libraries, runnerConfig) {
         if (dryRun) {
             cfg.dryRun = true;
         }
-        // Step 2 - Build the filesystem
-        return buildFilesystem(cfg, contentPath, workPath).then(changes =>
-            // Step 3 - Commit content to Github
-            commitContent(cfg, changes, contentPath).then(() =>
-                // Step 4 - Push changes to S3
-                pushToS3(cfg, contentPath, stagingPath, changes)
-            )
-        );
+        return checkoutRepos(cfg, workPath)
+            .then(workPaths => {
+                // Step 2 - Build the filesystem
+                return buildFilesystem(cfg, contentPath, workPath).then(changes =>
+                    // Step 3 - Commit content to Github
+                    commitContent(cfg, changes, contentPath).then(() =>
+                        // Step 4 - Push changes to S3
+                        pushToS3(cfg, contentPath, stagingPath, changes)
+                    )
+                );
+
+            });
     });
 };
