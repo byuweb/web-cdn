@@ -9,3 +9,9 @@ resources: # Resources tells the CDN which files to include.  You can use globs 
 entrypoints:  #entrypoints tells the CDN which files the users will be interested in using. This might go away.
   bootstrap.js: 'Examines browser support and downloads the appropriate component bundle'
 docs: https://github.com/byuweb/2017-components #This is a URL to documentation about how to use the library
+#build: inferred
+build:
+  dependencies:
+    - yarn install
+  build:
+    - yarn build
