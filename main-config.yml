@@ -5,6 +5,8 @@ demo-lib:
   source: github:byuweb/2017-components
 byu-card:
   source: github:byuweb/byu-card
+byu-calendar-row:
+  source: github:byuweb/byu-calendar-row
 byu-calendar-tile:
   source: github:byuweb/byu-calendar-tile
 web-component-polyfills:
