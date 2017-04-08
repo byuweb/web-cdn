@@ -3,6 +3,8 @@
 #  source: github:ThatJoeMoore/byu-web-cdn-demo-lib
 2017-core-components:
   source: github:byuweb/2017-components
+byu-theme-components:
+  source: github:byuweb/2017-components
 byu-card:
   source: github:byuweb/byu-card
 byu-calendar-row:
