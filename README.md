@@ -5,7 +5,7 @@ official BYU Look and Feel on your website.
 
 # Usage
 
-Go to (put some website here) to learn how to implement the BYU theme.
+Go to [https://brand.byu.edu](https://brand.byu.edu) to learn about the BYU theme.
 
 # How it works
 
@@ -21,7 +21,7 @@ guarantees and grants us simplicity in deployment. It also give us great analyti
 
 The basic URL pattern for hosted libraries is as follows:
 
-`https://web-cdn.byu.edu/{libraryName}/{version}`
+`https://cdn.byu.edu/{libraryName}/{version}`
 
 By default, a version will be created for each tag/release in the library's repository. In addition, versions
 will be created for each major and minor version, to allow consumers to easily get updates to the libraries they consume.
@@ -119,7 +119,7 @@ A sample `.cdn-config.yml` might look like this:
 name: My Fancy Widget
 description: A widget for being really, really fancy.
 docs: https://example.com/my-widget-docs/
-files:
+resources:
   - main.js
   - images/**
   - src: css/**
@@ -135,9 +135,9 @@ This is a user-friendly name for your library. It will be displayed in the CDN U
 A brief, user-friendly description of your library, for display in the CDN UI. By default, this is pulled from the
 Github repository description.
 
-## `files` - File Inclusion
+## `resources` - File Inclusion
 
-The `files` list tells the CDN what files should be served.  This can include glob patterns like `"dist/**.js"`, as well
+The `resources` list tells the CDN what files should be served.  This can include glob patterns like `"dist/**.js"`, as well
 as individual file paths.  All paths are resolved relative to the root directory. If there are multiple files or globs,
 they will all be included.
 
