@@ -2,9 +2,9 @@
 
 mkdir -p dist/
 
-babel runner.js --out-dir dist --presets=es2016-node4
-babel lambda --out-dir dist/lambda --presets=es2016-node4
-babel lib --out-dir dist/lib --presets=es2016-node4
+cp -R lib dist/
+cp -R lambda dist/
+cp runner.js dist/
 
 cp -R _aws dist/
 cp package.json main-config.yml dist/
