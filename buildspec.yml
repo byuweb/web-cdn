@@ -1,0 +1,11 @@
+version: 0.1
+
+phases:
+  pre_build:
+    commands:
+      - yarn install
+  # Insert stuff to set up the CDN
+  build:
+    commands:
+      - node run index.js
+

@@ -11,6 +11,7 @@ const os = require('os');
 /**
  * @typedef {{}} runnerConfig
  * @property {?string} tmpdir
+ * @property {boolean} [dryRun]
  */
 
 /**
