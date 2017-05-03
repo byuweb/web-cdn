@@ -7,5 +7,11 @@ phases:
   # Insert stuff to set up the CDN
   build:
     commands:
-      - node run index.js
+      - node index.js
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: .tmp/s3-staging
+
 
