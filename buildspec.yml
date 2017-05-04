@@ -9,6 +9,10 @@ phases:
     commands:
       - node index.js
 
+  post_build:
+    commands:
+      - echo "${GITHUB_USER}"
+
 artifacts:
   files:
     - '**/*'
