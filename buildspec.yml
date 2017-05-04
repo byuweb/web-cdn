@@ -6,7 +6,7 @@ phases:
       - curl -o- -L https://yarnpkg.com/install.sh | bash
   pre_build:
     commands:
-      - yarn install
+      - PATH="$HOME/.yarn/bin:$PATH" yarn install
   # Insert stuff to set up the CDN
   build:
     commands:
