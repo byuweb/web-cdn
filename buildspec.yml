@@ -11,7 +11,8 @@ phases:
 
   post_build:
     commands:
-      - echo "${GITHUB_USER}"
+      - echo "============ Syncing to ${DESTINATION_S3_BUCKET} ============"
+      - aws s3 sync --delete .tmp/s3-staging/ s3://${DESTINATION_S3_BUCKET}/ --acl public-read
 
 artifacts:
   files:
