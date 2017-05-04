@@ -3,6 +3,7 @@ version: 0.1
 phases:
   pre_build:
     commands:
+      - curl -o- -L https://yarnpkg.com/install.sh | bash
       - yarn install
   # Insert stuff to set up the CDN
   build:
