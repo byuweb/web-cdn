@@ -6,7 +6,7 @@ Resources:
     Properties:
       PolicyName: AllowCloudFrontInvalidation
       Roles:
-        - !Ref CdnBuilderLambdaRole
+        - !Ref CdnBuilderRole
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -16,7 +16,21 @@ Resources:
               - cloudfront:GetInvalidation
               - cloudfront:ListInvalidations
             Resource: "*"
-  CdnBuilderLambdaRole:
+  AllowCdnParameterStoreAccess:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AllowCdnParameterStoreAcccess
+      Roles:
+        - !Ref CdnBuilderRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - ssm:DescribeParameters
+              - ssm:GetParameters
+            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/web-community-cdn.*"
+  CdnBuilderRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -25,21 +39,23 @@ Resources:
           - Effect: Allow
             Principal:
               Service:
-                - "lambda.amazonaws.com"
+                - "codebuild.amazonaws.com"
             Action:
               - "sts:AssumeRole"
       Path: "/"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/CloudFrontReadOnlyAccess"
+        - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+
 Outputs:
   AllowCloudFrontInvalidationPolicy:
     Description: ARN of the policy for allowing Cloud Front Invalidations
     Value: !Sub "arn:aws:iam::${AWS::AccountId}:policy/${AllowCloudFrontInvalidation}"
     Export:
       Name: !Sub "${AWS::StackName}-AllowCloudFrontInvalidationPolicy"
-  BuilderLambdaRole:
-    Description: ARN of the role for the CDN builder lambda
-    Value: !GetAtt CdnBuilderLambdaRole.Arn
+  BuilderRole:
+    Description: ARN of the role for the CDN build process
+    Value: !GetAtt CdnBuilderRole.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-BuilderLambdaRole"
+      Name: !Sub "${AWS::StackName}-BuilderRole"
 
