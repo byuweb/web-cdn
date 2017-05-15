@@ -1,0 +1,21 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+#Transform: AWS::Serverless-2016-10-31
+Parameters:
+  Environment:
+    Type: String
+    Description: Deployment environment
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+  RolesStackName:
+    Type: String
+    Description: CFN stack name of the Roles stack
+    Default: WebCommunityCDN-Roles
+
+Resources:
+
+
+
