@@ -3,15 +3,15 @@
  */
 "use strict";
 
-require('babel-polyfill');
-
 const ipaddr = require('ipaddr.js');
 
-// const AWS = require('aws-sdk');
-//
-// const lambda = new AWS.Lambda();
-//
-// const BuildRequest = require('./build-request');
+const AWS = require('aws-sdk');
+const Pipeline = new AWS.CodePipeline();
+
+const CODE_PIPELINE_NAME = process.env.BUILDER_PIPELINE_NAME;
+if (!CODE_PIPELINE_NAME) {
+    throw 'Invalid configuration; please define BUILDER_PIPELINE_NAME';
+}
 
 /**
  *
@@ -56,23 +56,12 @@ exports.handler = function githubTrigger(incoming, context, callback) {
                     return;
                 }
 
-                // let request = {
-                //     source: BuildRequest.Source.GITHUB_PUSH,
-                //     sourceRepo: repoName,
-                //     commitSha: eventBody.head_commit.id
-                // };
-                //
-                // lambda.invoke({
-                //     FunctionName: process.env.BUILD_FUNCTION,
-                //     InvocationType: 'Event',
-                //
-                // })
-
-                const runner = require('../runner');
-
-                return runner(libs)
-                    .then(() => console.log('Finished run'))
-                    .then(() => callback(null, {ran: true}));
+                Pipeline.startPipelineExecution({
+                    name: CODE_PIPELINE_NAME
+                }, (error, data) => {
+                    if (error) callback(error);
+                    else callback(null, {running: true, executionId: data.pipelineExecutionId});
+                });
             })
             .catch(err => {
                 console.error('Execution error', err, err.stack);
@@ -85,8 +74,8 @@ exports.handler = function githubTrigger(incoming, context, callback) {
 };
 
 function _validateGithubIp(ip) {
-    return require('../lib/github/github-config').request
-        .promise('https://api.github.com/meta')
+    let req = require('request-promise-native');
+    return req('https://api.github.com/meta')
         .then(resp => {
             let hookCidrs = resp.hooks;
             console.log(`Checking if caller ip ${ip} is in github cidr range ${hookCidrs}`);
