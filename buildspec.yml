@@ -15,6 +15,8 @@ phases:
   post_build:
     commands:
       - echo "============ Syncing to ${DESTINATION_S3_BUCKET} ============"
+      - ls -al builder/
+      - ls -al ./
       - cd builder && aws s3 sync --delete .tmp/s3-staging/ s3://${DESTINATION_S3_BUCKET}/ --acl public-read
 
 artifacts:
