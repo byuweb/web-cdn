@@ -1,0 +1,133 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  Environment:
+    Type: String
+    Description: Deployment environment
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+  RolesStackName:
+    Type: String
+    Description: CFN stack name of the Roles stack
+    Default: WebCommunityCDN-Roles
+  HostingStackName:
+    Type: String
+    Description: CFN stack name of the Hosting stack
+Resources:
+  CfnStagingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "byu-web-community-cfn-staging-${Environment}"
+#      LifecycleConfiguration:
+#        Rules:
+#          - ExpirationInDays: 30
+#            Status: Enabled
+      Tags:
+      - Key: Name
+        Value: Web Community CDN Cloudformation Staging Bucket
+      - Key: team
+        # This isn't necessarily accurate, but it's the best group I can find for it.
+        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+      - Key: env
+        Value: !Ref Environment
+      - Key: data-sensitivity
+        Value: public
+      - Key: app
+        Value: Web Community CDN
+
+  WebhookApi:
+    Type: AWS::Serverless::Api
+    Properties:
+#      DefinitionUri: ./webhook-swagger.yml
+      StageName: !Ref Environment
+#      Variables:
+#        GithubLambdaName: !Ref GithubHookFunc
+#        GithubLambdaArn: !GetAtt GithubHookFunc.Arn
+#        AccountId: !Ref AWS::AccountId
+      DefinitionBody:
+        swagger: 2.0
+        info:
+          title:
+            Ref: AWS::StackName
+        paths:
+          "/github":
+            post:
+              summary: Github Web Hook Receiver
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: "202"
+                httpMethod: POST
+                type: aws
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GithubHookFunc.Arn}/invocations
+                requestTemplates:
+                  application/json: >
+                    {
+                      "source": "github",
+                      "callerIp": "$context.identity.sourceIp",
+                      "eventType": "$input.params('X-GitHub-Event')",
+                      "eventId": "$input.params('X-GitHub-Delivery')",
+                      "eventBody": $input.json('$')
+                    }
+              responses:
+                "202":
+                  description: Okay
+    Tags:
+      - Key: Name
+        Value: !Sub "Web Community CDN Webhook API - ${Environment}"
+      - Key: team
+        # This isn't necessarily accurate, but it's the best group I can find for it.
+        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+      - Key: env
+        Value: !Ref Environment
+      - Key: data-sensitivity
+        Value: public
+      - Key: app
+        Value: Web Community CDN
+    DependsOn: [GithubHookFunc]
+  GithubHookFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./../webhooks/
+      Handler: github-hook.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 60
+      Role:
+        Fn::ImportValue: !Sub "${RolesStackName}-InvokerRole"
+      Environment:
+        Variables:
+          BUILDER_PIPELINE_NAME:
+            Fn::ImportValue: !Sub "${HostingStackName}-BuildPipeline"
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WebhookApi
+            Path: /github
+            Method: POST
+    Tags:
+      - Key: Name
+        Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Github Webhook Receiver ] ]
+      - Key: team
+        # This isn't necessarily accurate, but it's the best group I can find for it.
+        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+      - Key: env
+        Value: !Ref Environment
+      - Key: data-sensitivity
+        Value: public
+      - Key: app
+        Value: Web Community CDN
+
+Outputs:
+  WebhookApiConsole:
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/apigateway/home?region=${AWS::Region}#/apis/${WebhookApi}/resources"
+    Description: URL of the Webhook API Console
+
+

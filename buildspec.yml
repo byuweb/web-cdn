@@ -20,6 +20,6 @@ phases:
 artifacts:
   files:
     - '**/*'
-  base-directory: .tmp/s3-staging
+  base-directory: builder/.tmp/s3-staging
 
 

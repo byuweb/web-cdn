@@ -3,7 +3,21 @@
  */
 "use strict";
 
+const MAIN_CONFIG_BRANCH = 'aws-codebuild';
+
 const ipaddr = require('ipaddr.js');
+const fs = require('fs');
+
+const packageVersion = require('./package.json').version;
+const yaml = require('node-yaml');
+const path = require('path');
+
+let req = require('request-promise-native').defaults({
+    headers: {
+        'User-Agent': 'BYU-Web-Community-CDN-Hooks ' + packageVersion
+    },
+    json: true
+});
 
 const AWS = require('aws-sdk');
 const Pipeline = new AWS.CodePipeline();
@@ -30,25 +44,18 @@ exports.handler = function githubTrigger(incoming, context, callback) {
         return Promise.resolve();
     } else if (eventType !== 'push') {
         console.log(`Skipping event of type ${eventType} because it isn't a 'push'`);
-        callback(null, {ran: false, reason: 'eventType !== push'});
+        callback({ran: false, errorMessage: 'Event was not a push event!'});
         return Promise.resolve();
     }
 
     try {
-        //Note: these requires are being delayed in the name of fast startup times.
-        const yaml = require('node-yaml');
-        const path = require('path');
-
-        const util = require('../lib/util');
-
         _validateGithubIp(callerIp)
-            .then(() => yaml.read(path.join(process.cwd(), 'main-config.yml')))
+            .then(() => getMainConfig())
             .then(libs => {
                 console.log('Running with libs config', libs);
-                let repoIsRegistered = util.objectAsArray(libs).some(pair => {
-                    let {key, value} = pair;
-                    return value.source === 'github:' + repoName;
-                });
+                let repoIsRegistered = Object.getOwnPropertyNames(libs)
+                    .map(k => libs[k])
+                    .some(value => value.source === 'github:' + repoName);
                 if (!repoIsRegistered) {
                     let message = `Repository ${repoName} is not included in config`;
                     console.log(message);
@@ -73,8 +80,7 @@ exports.handler = function githubTrigger(incoming, context, callback) {
     }
 };
 
-function _validateGithubIp(ip) {
-    let req = require('request-promise-native');
+function _validateGithubIp(ip, cb) {
     return req('https://api.github.com/meta')
         .then(resp => {
             let hookCidrs = resp.hooks;
@@ -86,5 +92,18 @@ function _validateGithubIp(ip) {
                 throw new Error(`Caller IP ${ip} is not a Github Webhook caller!`);
             }
         })
+}
+
+function getMainConfig() {
+    let localPath = path.join(process.cwd(), '..', 'main-config.yml');
+    if (fs.existsSync(localPath)) {
+        return yaml.read(localPath);
+    }
+    return req({
+        url: `https://raw.githubusercontent.com/byuweb/web-cdn/${MAIN_CONFIG_BRANCH}/main-config.yml`,
+        json: false
+    }).then(response => {
+        return yaml.parse(response);
+    });
 }
 

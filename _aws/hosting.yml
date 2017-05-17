@@ -1,6 +1,5 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-#Transform: AWS::Serverless-2016-10-31
 Parameters:
   Environment:
     Type: String
@@ -220,56 +219,6 @@ Resources:
         - Key: app
           Value: Web Community CDN
 
-#  WebhookApi:
-#    Type: AWS::Serverless::Api
-#    Properties:
-#      DefinitionUri: ./webhook-swagger.yml
-#      StageName: Prod
-#      Variables:
-#        GithubLambdaName: !Ref GithubHookFunc
-#    Tags:
-#      - Key: Name
-#        Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Webhook API ] ]
-#      - Key: team
-#        # This isn't necessarily accurate, but it's the best group I can find for it.
-#        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
-#      - Key: env
-#        Value: !Ref Environment
-#      - Key: data-sensitivity
-#        Value: public
-#      - Key: app
-#        Value: Web Community CDN
-#    DependsOn: [GithubHookFunc]
-#  GithubHookFunc:
-#    Type: AWS::Serverless::Function
-#    Properties:
-#      CodeUri: ./../
-#      Handler: lambda/github-hook.handler
-#      Runtime: nodejs6.10
-#      MemorySize: 128
-#      Timeout: 60
-#      Role:
-#        Fn::ImportValue: !Sub "${RolesStackName}-BuilderRole"
-#      Events:
-#        ProxyApiRoot:
-#          Type: Api
-#          Properties:
-#            RestApiId: !Ref WebhookApi
-#            Path: /github
-#            Method: POST
-#    Tags:
-#      - Key: Name
-#        Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Github Webhook Receiver ] ]
-#      - Key: team
-#        # This isn't necessarily accurate, but it's the best group I can find for it.
-#        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
-#      - Key: env
-#        Value: !Ref Environment
-#      - Key: data-sensitivity
-#        Value: public
-#      - Key: app
-#        Value: Web Community CDN
-
 Outputs:
   ContentBucket:
     Value:
@@ -282,8 +231,10 @@ Outputs:
     Description: Domain name of the content S3 bucket
     Export:
       Name: !Sub "${AWS::StackName}-ContentBucketDomain"
-#  WebhookApiConsole:
-#    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/apigateway/home?region=${AWS::Region}#/apis/${WebhookApi}/resources"
-#    Description: URL of the Webhook API Console
+  BuildPipeline:
+    Value: !Ref CdnBuildPipeline
+    Description: Name of the builder pipeline
+    Export:
+      Name: !Sub "${AWS::StackName}-BuildPipeline"
 
 
