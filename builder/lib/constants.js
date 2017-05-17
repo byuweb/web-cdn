@@ -33,7 +33,7 @@ module.exports = freezer({
         GITHUB_ORG: 'byuweb',
         GITHUB_REPO: 'web-cdn',
         CONTENT_BRANCH: 'content',
-        USER_AGENT: 'BYU-Web-Community-CDN ' + packageVersion
+        USER_AGENT: 'BYU-Web-Community-CDN-Builder ' + packageVersion
     },
     S3: {
         BUCKET: process.env.DESTINATION_S3_BUCKET

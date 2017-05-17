@@ -47,6 +47,28 @@ Resources:
         - "arn:aws:iam::aws:policy/CloudFrontReadOnlyAccess"
         - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 
+  CdnBuildInvokerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "AllowBuildInvocation"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "codepipeline:StartPipelineExecution"
+                Resource: !Sub "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:WebCommunityCDN-*"
+
 Outputs:
   AllowCloudFrontInvalidationPolicy:
     Description: ARN of the policy for allowing Cloud Front Invalidations
@@ -58,4 +80,9 @@ Outputs:
     Value: !GetAtt CdnBuilderRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-BuilderRole"
+  InvokerRole:
+    Description: ARN of the role for the CDN build process
+    Value: !GetAtt CdnBuildInvokerRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-InvokerRole"
 
