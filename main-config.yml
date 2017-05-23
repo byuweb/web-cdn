@@ -13,3 +13,5 @@ byu-calendar-tile:
   source: github:byuweb/byu-calendar-tile
 web-component-polyfills:
   source: github:byuweb/web-component-polyfills
+shared-icons:
+  source: github:byuweb/shared-icons
