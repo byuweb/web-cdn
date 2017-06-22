@@ -15,3 +15,5 @@ web-component-polyfills:
   source: github:byuweb/web-component-polyfills
 shared-icons:
   source: github:byuweb/shared-icons
+byu-theme-style-helpers:
+  source: github:byuweb/byu-theme-style-helpers
