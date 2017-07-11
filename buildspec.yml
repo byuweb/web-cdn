@@ -4,7 +4,7 @@ phases:
   install:
     commands:
       - apt-get update && apt-get install -y python-dev python-pip
-      - pip install --upgrade --user awscli
+      - pip install --upgrade awscli
   pre_build:
     commands:
       - cd builder
