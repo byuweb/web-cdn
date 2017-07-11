@@ -7,16 +7,17 @@ phases:
       - pip install --upgrade --user awscli
   pre_build:
     commands:
-      - cd builder && npm install
+      - cd builder
+      - npm install
   # Insert stuff to set up the CDN
   build:
     commands:
-      - cd builder && node index.js
+      - node index.js
 
   post_build:
     commands:
       - echo "============ Syncing to ${DESTINATION_S3_BUCKET} ============"
-      - cd builder && aws s3 sync --delete .tmp/s3-staging/ s3://${DESTINATION_S3_BUCKET}/ --acl public-read
+      - aws s3 sync --delete .tmp/s3-staging/ s3://${DESTINATION_S3_BUCKET}/ --acl public-read
 
 artifacts:
   files:
