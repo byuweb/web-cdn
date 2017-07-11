@@ -3,10 +3,11 @@ version: 0.1
 phases:
   install:
     commands:
-      - curl -o- -L https://yarnpkg.com/install.sh | bash
+      - apt-get install -y python-dev python-pip
+      - pip install --upgrade --user awscli
   pre_build:
     commands:
-      - cd builder && PATH="$HOME/.yarn/bin:$PATH" yarn install
+      - cd builder && npm install
   # Insert stuff to set up the CDN
   build:
     commands:

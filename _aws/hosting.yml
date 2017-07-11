@@ -196,7 +196,7 @@ Resources:
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/nodejs:7.0.0
+        Image: node:latest
         EnvironmentVariables:
           - Name: DESTINATION_S3_BUCKET
             Value: !Ref ContentBucket
