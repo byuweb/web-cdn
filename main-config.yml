@@ -19,3 +19,5 @@ byu-theme-style-helpers:
   source: github:byuweb/byu-theme-style-helpers
 byu-news-component:
   source: github:byuweb/byu-news-component
+byu-feature-card:
+  source: github:byuweb/byu-feature-card
