@@ -42,7 +42,7 @@ exports.handler = function githubTrigger(incoming, context, callback) {
         const util = require('../lib/util');
 
         _validateGithubIp(callerIp)
-            .then(() => yaml.readPromise(path.join(process.cwd(), 'main-config.yml')))
+            .then(() => yaml.read(path.join(process.cwd(), 'main-config.yml')))
             .then(libs => {
                 console.log('Running with libs config', libs);
                 let repoIsRegistered = util.objectAsArray(libs).some(pair => {
