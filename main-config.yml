@@ -17,7 +17,7 @@ shared-icons:
   source: github:byuweb/shared-icons
 byu-theme-style-helpers:
   source: github:byuweb/byu-theme-style-helpers
-byu-news-component:
-  source: github:byuweb/byu-news-component
+byu-news-components:
+  source: github:byuweb/byu-news-components
 byu-feature-card:
   source: github:byuweb/byu-feature-card
