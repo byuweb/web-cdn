@@ -16,4 +16,4 @@ dist/
 
 .current-contents/
 
-_aws/*.sh
+infrastructure/*.sh
