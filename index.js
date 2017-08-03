@@ -9,7 +9,7 @@ yaml.read('./main-config.yml')
     //Now run it!
     .then(config => runner(config, {
         tmpdir: path.join(process.cwd(), '.tmp'),
-        dryRun: true
+        dryRun: false
     }))
     .catch(err => console.error(err));
 
