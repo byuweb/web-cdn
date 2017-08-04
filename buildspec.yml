@@ -1,27 +1,7 @@
 version: 0.2
 
 phases:
-  install:
-    commands:
-      - apt-get update && apt-get install -y python-dev python-pip
-      - pip install --upgrade awscli
-  pre_build:
-    commands:
-      - cd builder
-      - npm install
-  # Insert stuff to set up the CDN
   build:
     commands:
-      - node index.js
-
-  post_build:
-    commands:
-      - echo "============ Syncing to ${DESTINATION_S3_BUCKET} ============"
-      - aws s3 sync --delete .tmp/s3-staging/ s3://${DESTINATION_S3_BUCKET}/ --acl public-read
-
-artifacts:
-  files:
-    - '**/*'
-  base-directory: builder/.tmp/s3-staging
-
+      - cdn-assembler --config main-config.yml --bucket $DESTINATION_S3_BUCKET --env $BUILD_ENV --dry-run
 

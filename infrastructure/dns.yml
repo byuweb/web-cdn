@@ -7,13 +7,16 @@ Parameters:
     Default: dev
     AllowedValues:
       - dev
+      - stg
       - prod
 Mappings:
   DNSSubdomainMap:
     prod:
       root: cdn.byu.edu.
+    stg:
+      root: stg.cdn.byu.edu.
     dev:
-      root: cdn-dev.byu.edu.
+      root: dev.cdn.byu.edu.
 Resources:
   DNS:
     Type: AWS::Route53::HostedZone
@@ -33,10 +36,13 @@ Resources:
         Value: public
       - Key: app
         Value: Web Community CDN
+    DeletionPolicy: Retain
 Outputs:
   DNSZone:
     Description: DNS Zone ID
     Value: !Ref DNS
     Export:
       Name: !Sub "${AWS::StackName}-DNS"
-
+  NameServers:
+    Description: DNS Name Servers
+    Value: !GetAtt DNS.NameServers

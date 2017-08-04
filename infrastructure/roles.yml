@@ -30,6 +30,22 @@ Resources:
               - ssm:DescribeParameters
               - ssm:GetParameters
             Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/web-community-cdn.*"
+  AllowCdnImageAccess:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AllowCdnImageAccess
+      Roles:
+        - !Ref CdnBuilderRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - ecr:BatchCheckLayerAvailability
+              - ecr:BatchGetImage
+              - ecr:GetDownloadUrlForLayer
+            Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/web-community-cdn-assembler"
+
   CdnBuilderRole:
     Type: AWS::IAM::Role
     Properties:

@@ -12,41 +12,13 @@ Parameters:
   RolesStackName:
     Type: String
     Description: CFN stack name of the Roles stack
-    Default: WebCommunityCDN-Roles
-  GithubOauthToken:
-    Type: String
-    NoEcho: true
-Mappings:
-  Bucket:
-    prod:
-      name: cdn.byu.edu
-    stg:
-      name: byu-web-community-cdn-stg
-    dev:
-      name: byu-web-community-cdn-dev
-  DNSSubdomainMap:
-    prod:
-      root: cdn.byu.edu.
-      alias: cdn.byu.edu
-    stg:
-      root: stg.cdn.byu.edu.
-      alias: stg.cdn.byu.edu
-    dev:
-      root: dev.cdn.byu.edu.
-      alias: dev.cdn.byu.edu
-  GithubBranch:
-    prod:
-      name: master
-    stg:
-      name: develop
-    dev:
-      name: aws-codebuild
+    Default: web-community-cdn-roles
 Resources:
   ContentBucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: PublicRead
-      BucketName: !FindInMap [Bucket, !Ref Environment, name]
+      BucketName: !Sub "web-community-cdn-contents-${Environment}"
       CorsConfiguration:
         CorsRules:
         - Id: AllowAllGets
@@ -59,7 +31,7 @@ Resources:
         IndexDocument: index.html
       Tags:
       - Key: Name
-        Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Bucket ] ]
+        Value: !Sub "Web Community CDN ${Environment} Contents"
       - Key: team
         # This isn't necessarily accurate, but it's the best group I can find for it.
         Value: OIT_APP_DEV__STUDENT_LIFE_APPS
@@ -69,6 +41,7 @@ Resources:
         Value: public
       - Key: app
         Value: Web Community CDN
+
   ContentBucketAllowBuilderUpdates:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -91,134 +64,6 @@ Resources:
               - s3:*
             Resource: !Sub "arn:aws:s3:::${ContentBucket}/*"
 
-  CdnBuildPipelineArtifactStore:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      LifecycleConfiguration:
-        Rules:
-          - ExpirationInDays: 30
-            Status: Enabled
-      Tags:
-      - Key: Name
-        Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Artifact Storage ] ]
-      - Key: team
-        # This isn't necessarily accurate, but it's the best group I can find for it.
-        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
-      - Key: env
-        Value: !Ref Environment
-      - Key: data-sensitivity
-        Value: public
-      - Key: app
-        Value: Web Community CDN
-  CdnBuildPipelineArtifactStorePolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref CdnBuildPipelineArtifactStore
-      PolicyDocument:
-        Version: '2012-10-17'
-        Id: SSEAndSSLPolicy
-        Statement:
-        - Sid: DenyUnEncryptedObjectUploads
-          Effect: Deny
-          Principal: "*"
-          Action: s3:PutObject
-          Resource: !Sub "arn:aws:s3:::${CdnBuildPipelineArtifactStore}/*"
-          Condition:
-            StringNotEquals:
-              s3:x-amz-server-side-encryption: aws:kms
-        - Sid: DenyInsecureConnections
-          Effect: Deny
-          Principal: "*"
-          Action: s3:*
-          Resource: !Sub "arn:aws:s3:::${CdnBuildPipelineArtifactStore}/*"
-          Condition:
-            Bool:
-              aws:SecureTransport: 'false'
-        - Effect: Allow
-          Principal:
-            AWS:
-              Fn::ImportValue: !Sub "${RolesStackName}-BuilderRole"
-          Action:
-            - s3:*
-          Resource: !Sub "arn:aws:s3:::${CdnBuildPipelineArtifactStore}/*"
-
-  CdnBuildPipeline:
-    Type: AWS::CodePipeline::Pipeline
-    DependsOn: CdnBuildProject
-    Properties:
-      Name: !Sub "WebCommunityCDN-${Environment}-builder-pipeline"
-      ArtifactStore:
-        Type: S3
-        Location: !Ref CdnBuildPipelineArtifactStore
-      RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/service-roles/CodePipelineService"
-      Stages:
-        - Name: Source
-          Actions:
-            - Name: SourceAction
-              ActionTypeId:
-                Category: Source
-                Owner: ThirdParty
-                Version: 1
-                Provider: GitHub
-              OutputArtifacts:
-                - Name: Source
-              Configuration:
-                Owner: byuweb
-                Repo: web-cdn
-                Branch: !FindInMap [GithubBranch, !Ref Environment, name]
-                OAuthToken: !Ref GithubOauthToken
-              RunOrder: 1
-        - Name: Build
-          Actions:
-            - Name: CodeBuild
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: 1
-                Provider: CodeBuild
-              InputArtifacts:
-                - Name: Source
-              OutputArtifacts:
-                - Name: BuiltFilesystem
-              Configuration:
-                ProjectName: !Ref CdnBuildProject
-              RunOrder: 1
-
-  CdnBuildProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: !Sub "WebCommunityCDN-${Environment}-builder"
-      Description: Assembles, builds, and deploys the contents of the BYU Web Community CDN
-      Artifacts:
-        Type: CODEPIPELINE
-        Packaging: none
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: node:latest
-        EnvironmentVariables:
-          - Name: DESTINATION_S3_BUCKET
-            Value: !Ref ContentBucket
-          - Name: BUILD_ENV
-            Value: !Ref Environment
-      Source:
-        Type: CODEPIPELINE
-      ServiceRole:
-        Fn::ImportValue: !Sub "${RolesStackName}-BuilderRole"
-      Tags:
-        - Key: Name
-          Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Builder ] ]
-        - Key: team
-          # This isn't necessarily accurate, but it's the best group I can find for it.
-          Value: OIT_APP_DEV__STUDENT_LIFE_APPS
-        - Key: env
-          Value: !Ref Environment
-        - Key: data-sensitivity
-          Value: public
-        - Key: app
-          Value: Web Community CDN
-
 Outputs:
   ContentBucket:
     Value:
@@ -226,15 +71,5 @@ Outputs:
     Description: Name of S3 bucket to hold website content
     Export:
       Name: !Sub "${AWS::StackName}-ContentBucket"
-  ContentBucketDomain:
-    Value: !GetAtt ContentBucket.DomainName
-    Description: Domain name of the content S3 bucket
-    Export:
-      Name: !Sub "${AWS::StackName}-ContentBucketDomain"
-  BuildPipeline:
-    Value: !Ref CdnBuildPipeline
-    Description: Name of the builder pipeline
-    Export:
-      Name: !Sub "${AWS::StackName}-BuildPipeline"
 
 
