@@ -3,5 +3,5 @@ version: 0.2
 phases:
   build:
     commands:
-      - cdn-assembler --config main-config.yml --bucket $DESTINATION_S3_BUCKET --env $BUILD_ENV --dry-run
+      - cdn-assembler --config main-config.yml --bucket $DESTINATION_S3_BUCKET --env $BUILD_ENV
 
