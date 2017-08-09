@@ -33,10 +33,9 @@ module.exports = function initApp(opts) {
 
     app.use(injectMainConfig);
 
-    app.use(logError);
-    app.use(translateError);
-
     app.post('/github', githubHook(options));
+
+    app.use(translateError);
 
     return app;
 
@@ -49,22 +48,16 @@ module.exports = function initApp(opts) {
     }
 };
 
-function logError(err, req, resp, next) {
+function translateError(err, req, resp, next) {
     if (err.httpStatus) {
         console.error('Error: HTTP Status ' + err.httpStatus, err);
     } else {
         console.error('Unexpected Error', err);
     }
-    next(err);
-}
-
-
-function translateError(err, req, resp, next) {
     resp.status(err.httpStatus || 500)
-        .json({
+        .send({
             'error_name': err.name,
             'error_message': err.message
         });
-    next(err);
 }
 

@@ -45,4 +45,4 @@ Outputs:
       Name: !Sub "${AWS::StackName}-DNS"
   NameServers:
     Description: DNS Name Servers
-    Value: !GetAtt DNS.NameServers
+    Value: !Join [ ";", !GetAtt DNS.NameServers ]

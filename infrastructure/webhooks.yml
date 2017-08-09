@@ -17,6 +17,37 @@ Parameters:
   PipelineStackName:
     Type: String
     Description: CFN stack name of the Assembly Pipeline stack
+Mappings:
+  DomainNames:
+    prod:
+      root: cdn.byu.edu.
+      webhooks: webhooks.cdn.byu.edu
+    stg:
+      root: beta.cdn.byu.edu.
+      webhooks: webhooks.beta.cdn.byu.edu
+    dev:
+      root: dev.cdn.byu.edu.
+      webhooks: webhooks.dev.cdn.byu.edu
+  Certs:
+    #prd-appdev-oit-byu
+    "427927161742":
+      cdn: arn:aws:acm:us-east-1:427927161742:certificate/66066e1d-6aac-49f4-8b52-bd699547b8d6
+    #dev-oit-byu
+    "818272543125":
+      cdn: ""
+    #trn-oit-byu
+    "398230616010":
+      cdn: arn:aws:acm:us-east-1:398230616010:certificate/811c7982-75e1-4565-b81b-4a4dad3e6b85
+  MainConfig:
+    prod:
+      repo: byuweb/web-cdn
+      branch: master
+    stg:
+      repo: byuweb/web-cdn
+      branch: master
+    dev:
+      repo: byuweb/web-cdn
+      branch: master
 Resources:
   CfnStagingBucket:
     Type: AWS::S3::Bucket
@@ -36,57 +67,43 @@ Resources:
       - Key: app
         Value: Web Community CDN
 
-  WebhookApi:
-    Type: AWS::Serverless::Api
+  WebhookDomain:
+    Type: AWS::ApiGateway::DomainName
     Properties:
-      StageName: !Ref Environment
-      DefinitionBody:
-        swagger: 2.0
-        info:
-          title:
-            Ref: AWS::StackName
-        paths:
-          "/github":
-            post:
-              summary: Github Web Hook Receiver
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: "202"
-                httpMethod: POST
-                type: aws
-                uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GithubHookFunc.Arn}/invocations
-                requestTemplates:
-                  application/json: >
-                    {
-                      "source": "github",
-                      "callerIp": "$context.identity.sourceIp",
-                      "eventType": "$input.params('X-GitHub-Event')",
-                      "eventId": "$input.params('X-GitHub-Delivery')",
-                      "eventBody": $input.json('$')
-                    }
-              responses:
-                "202":
-                  description: Okay
-    Tags:
-      - Key: Name
-        Value: !Sub "Web Community CDN Webhook API - ${Environment}"
-      - Key: team
-        # This isn't necessarily accurate, but it's the best group I can find for it.
-        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
-      - Key: env
-        Value: !Ref Environment
-      - Key: data-sensitivity
-        Value: public
-      - Key: app
-        Value: Web Community CDN
-    DependsOn: [GithubHookFunc]
-  GithubHookFunc:
+      CertificateArn: !FindInMap [ Certs, !Ref "AWS::AccountId", cdn ]
+      DomainName: !FindInMap [ DomainNames, !Ref Environment, webhooks ]
+
+  WebhookBasePath:
+    DependsOn: [WebhookFunc]
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref WebhookDomain
+  # This is a hack.  We're depending on some auto-generated names that could change at any time.
+      RestApiId: !Ref ServerlessRestApi
+      Stage: !Ref ServerlessRestApiProdStage
+
+  WebhookDNS:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: !FindInMap [ DomainNames, !Ref Environment, root ]
+      Comment: DNS for CDN Webhooks
+      RecordSets:
+        - Name: !FindInMap [ DomainNames, !Ref Environment, webhooks ]
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebhookDomain.DistributionDomainName
+        - Name: !FindInMap [ DomainNames, !Ref Environment, webhooks ]
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebhookDomain.DistributionDomainName
+
+  WebhookFunc:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./../webhooks/
-      Handler: github-hook.handler
+      Handler: lambda.handler
       Runtime: nodejs6.10
       MemorySize: 128
       Timeout: 60
@@ -94,14 +111,15 @@ Resources:
         Fn::ImportValue: !Sub "${RolesStackName}-InvokerRole"
       Environment:
         Variables:
-          BUILDER_PIPELINE_NAME:
+          CDN_ASSEMBLER_PIPELINE_NAME:
             Fn::ImportValue: !Sub "${PipelineStackName}-BuildPipeline"
+          CDN_MAIN_CONFIG_REPO: !FindInMap [ MainConfig, !Ref Environment, repo ]
+          CDN_MAIN_CONFIG_BRANCH: !FindInMap [ MainConfig, !Ref Environment, branch ]
       Events:
         ProxyApiRoot:
           Type: Api
           Properties:
-            RestApiId: !Ref WebhookApi
-            Path: /github
+            Path: /{proxy+}
             Method: POST
     Tags:
       - Key: Name
@@ -116,9 +134,9 @@ Resources:
       - Key: app
         Value: Web Community CDN
 
-Outputs:
-  WebhookApiConsole:
-    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/apigateway/home?region=${AWS::Region}#/apis/${WebhookApi}/resources"
-    Description: URL of the Webhook API Console
+#Outputs:
+#  WebhookApiConsole:
+#    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/apigateway/home?region=${AWS::Region}#/apis/${WebhookApi}/resources"
+#    Description: URL of the Webhook API Console
 
 

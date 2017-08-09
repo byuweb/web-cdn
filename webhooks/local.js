@@ -17,10 +17,14 @@
 
 "use strict";
 
-module.exports = class HttpError extends Error {
-    constructor(status, message) {
-        super(message);
-        this.httpStatus = status;
-        this.trace = (new Error()).trace;
-    }
-};
+const app = require('./webhooks');
+
+app({
+    assemblerPipelineName: 'test',
+    mainConfigRepo: 'byuweb/web-cdn',
+    mainConfigBranch: 'master',
+    skipCallerValidation: true,
+}).listen(8000, function() {
+    console.log('listening on port 3000')
+});
+

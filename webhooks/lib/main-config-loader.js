@@ -33,7 +33,7 @@ module.exports = function loadConfig(options) {
                 throw new Error('must set both mainConfigRepo and mainConfigBranch');
             }
             return req({
-                url: `https://raw.githubusercontent.com/${options.mainConfigRepo}/${options.mainConfigBranc}/main-config.yml`,
+                url: `https://raw.githubusercontent.com/${options.mainConfigRepo}/${options.mainConfigBranch}/main-config.yml`,
                 json: false
             });
         }

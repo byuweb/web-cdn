@@ -62,6 +62,17 @@ Resources:
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/CloudFrontReadOnlyAccess"
         - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+      Policies:
+        - PolicyName: "AllowImageAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/web-community-cdn-assembler"
 
   CdnBuildInvokerRole:
     Type: AWS::IAM::Role
@@ -76,6 +87,8 @@ Resources:
             Action:
               - "sts:AssumeRole"
       Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       Policies:
         - PolicyName: "AllowBuildInvocation"
           PolicyDocument:

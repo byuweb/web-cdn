@@ -38,12 +38,16 @@ module.exports = function (options) {
         let eventType = req.headers['x-github-event'];
         let eventId = req.headers['x-github-delivery'];
 
+        if (!eventBody.repository || !eventBody.repository.full_name) {
+            throw new HttpError(500, 'Malformed request body');
+        }
+
         let repoName = eventBody.repository.full_name;
 
         console.log(`Received Github event '${eventType}' ${eventId} from ${callerIp} for repo ${repoName}`);
 
         handleEvent(eventBody, eventType, callerIp, req.cdnConfig, options)
-            .then(result => resp.status(200).json(result))
+            .then(result => resp.status(202).send(result))
             .catch(next);
     }
 };
