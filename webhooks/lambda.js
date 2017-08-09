@@ -42,5 +42,6 @@ function requireEnv(name) {
     if (!value) {
         throw 'Invalid configuration; please define ' + name;
     }
+    return value;
 }
 

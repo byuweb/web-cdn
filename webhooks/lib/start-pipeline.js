@@ -22,6 +22,7 @@ const CodePipeline = new AWS.CodePipeline();
 const HttpError = require('./http-error');
 
 module.exports = function startPipeline(name) {
+    console.log(`Starting pipeline ${name}`);
     return CodePipeline.startPipelineExecution({
         name: name
     }).promise()

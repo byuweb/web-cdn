@@ -25,11 +25,20 @@ const bodyParser = require('body-parser');
 
 module.exports = function initApp(opts) {
     let options = opts || {};
-
+    console.log('Setting up application with options', options);
     const app = express();
+
+    app.enable('trust proxy');
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({extended: true}));
+
+    app.use((req, resp, next) => {
+        console.log(`------- Incoming request: ${req.method} ${req.url} -------`);
+        console.log('- Request Headers:', JSON.stringify(req.headers, null, 2));
+        console.log('- Request Body:', req.body);
+        next();
+    });
 
     app.use(injectMainConfig);
 

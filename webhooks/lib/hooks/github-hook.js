@@ -77,6 +77,7 @@ function handleEvent(event, eventType, callerIp, mainConfig, options) {
 
             return startPipeline(options.assemblerPipelineName)
                 .then(executionId => {
+                    console.log('Started pipeline with execution ID', executionId);
                     return {running: true, executionId: executionId};
                 });
         });
