@@ -1,0 +1,88 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Environment:
+    Type: String
+    Description: Deployment environment
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+  HostingStackName:
+    Type: String
+    Description: Stack name of the hosting stack
+Mappings:
+  Certs:
+    #prd-appdev-oit-byu
+    "427927161742":
+      cdn: arn:aws:acm:us-east-1:427927161742:certificate/66066e1d-6aac-49f4-8b52-bd699547b8d6
+    #dev-oit-byu
+    "818272543125":
+      cdn: ""
+    #trn-oit-byu
+    "398230616010":
+      cdn: arn:aws:acm:us-east-1:398230616010:certificate/811c7982-75e1-4565-b81b-4a4dad3e6b85
+  DNSSubdomainMap:
+    prod:
+      root: cdn.byu.edu.
+      alias: cdn.byu.edu
+    stg:
+      root: beta.cdn.byu.edu.
+      alias: beta.cdn.byu.edu
+    dev:
+      root: dev.cdn.byu.edu.
+      alias: dev.cdn.byu.edu
+  BucketNames:
+    prod:
+      content: cdn.byu.edu
+Resources:
+  WebsiteCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: CDN for S3-backed website
+        Aliases:
+         - !FindInMap [ DNSSubdomainMap, !Ref Environment, alias ]
+        Enabled: 'true'
+        HttpVersion: http2
+        ViewerCertificate:
+          AcmCertificateArn: !FindInMap [ Certs, !Ref "AWS::AccountId", cdn ]
+          SslSupportMethod: sni-only
+        DefaultCacheBehavior:
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          DefaultTTL: 3600
+          ForwardedValues:
+            QueryString: 'true'
+            Headers: [Origin]
+          TargetOriginId: only-origin
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        Origins:
+        - Id: only-origin
+          DomainName:
+            Fn::Sub:
+              - "${Bucket}.s3.amazonaws.com"
+              - Bucket:
+                  Fn::ImportValue: !Sub "${HostingStackName}-ContentBucket"
+          S3OriginConfig:
+            OriginAccessIdentity: ''
+
+  WebsiteDNS:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: !FindInMap [ DNSSubdomainMap, !Ref Environment, root ]
+      Comment: DNS for CDN
+      RecordSets:
+        - Name: !FindInMap [ DNSSubdomainMap, !Ref Environment, root ]
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebsiteCDN.DomainName
+        - Name: !FindInMap [ DNSSubdomainMap, !Ref Environment, root ]
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebsiteCDN.DomainName
