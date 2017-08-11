@@ -47,7 +47,7 @@ Mappings:
       branch: master
     dev:
       repo: byuweb/web-cdn
-      branch: master
+      branch: aws-codebuild
 Resources:
   CfnStagingBucket:
     Type: AWS::S3::Bucket
