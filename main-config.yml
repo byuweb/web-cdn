@@ -11,8 +11,6 @@ byu-calendar-row:
   source: github:byuweb/byu-calendar-row
 byu-calendar-tile:
   source: github:byuweb/byu-calendar-tile
-web-component-polyfills:
-  source: github:byuweb/web-component-polyfills
 shared-icons:
   source: github:byuweb/shared-icons
 byu-theme-style-helpers:
@@ -25,3 +23,20 @@ byu-hero-banner:
   source: github:byuweb/byu-hero-banner
 byu-faculty-directory:
   source: github:byuweb/byu-faculty-directory
+web-component-polyfills:
+  source: github:byuweb/web-component-polyfills
+#  source: npm:@webcomponents/webcomponentsjs
+#  configuration:
+#    versions:
+#      "^1.0.7":
+#        resources:
+#          - webcomponents-*.js*
+#          # Copy full web component bundle for backward compatibility
+#          - src: webcomponents-lite.js
+#            rename:
+#              - regex: webcomponents-lite.js
+#                to: web-component-polyfills.min.js
+#              - regex: webcomponents-lite.js
+#                to: web-component-polyfills.js
+
+
