@@ -21,6 +21,8 @@ byu-feature-card:
   source: github:byuweb/byu-feature-card-component
 byu-hero-banner:
   source: github:byuweb/byu-hero-banner
+cdn-site:
+  source: github:byuweb/web-cdn-site
 byu-faculty-directory:
   source: github:byuweb/byu-faculty-directory
 web-component-polyfills:
