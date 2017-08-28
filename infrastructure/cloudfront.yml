@@ -63,12 +63,11 @@ Resources:
         Origins:
         - Id: only-origin
           DomainName:
-            Fn::Sub:
-              - "${Bucket}.s3.amazonaws.com"
-              - Bucket:
-                  Fn::ImportValue: !Sub "${HostingStackName}-ContentBucket"
-          S3OriginConfig:
-            OriginAccessIdentity: ''
+            Fn::ImportValue: !Sub "${HostingStackName}-ContentBucketWebsiteDomain"
+          CustomOriginConfig:
+            HTTPPort: 80
+            HTTPSPort: 443
+            OriginProtocolPolicy: http-only
 
   WebsiteDNS:
     Type: AWS::Route53::RecordSetGroup

@@ -73,5 +73,17 @@ Outputs:
     Description: Name of S3 bucket to hold website content
     Export:
       Name: !Sub "${AWS::StackName}-ContentBucket"
+  ContentBucketDomain:
+    Value: !GetAtt ContentBucket.DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-ContentBucketDomain"
+  ContentBucketWebsite:
+    Value: !GetAtt ContentBucket.WebsiteURL
+    Export:
+      Name: !Sub "${AWS::StackName}-ContentBucketWebsite"
+  ContentBucketWebsiteDomain:
+    Value: !Select [ 1, !Split [ "://", !GetAtt ContentBucket.WebsiteURL ] ]
+    Export:
+      Name: !Sub "${AWS::StackName}-ContentBucketWebsiteDomain"
 
 
