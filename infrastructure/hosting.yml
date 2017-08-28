@@ -55,6 +55,7 @@ Resources:
                 Fn::ImportValue: !Sub "${RolesStackName}-BuilderRole"
             Action:
               - s3:ListBucket
+              - s3:PutBucketWebsite
             Resource: !Sub "arn:aws:s3:::${ContentBucket}"
           - Effect: Allow
             Principal:
