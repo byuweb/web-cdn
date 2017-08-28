@@ -1,8 +1,4 @@
 ---
-demo-lib:
-  source: github:ThatJoeMoore/byu-web-cdn-demo-lib
-2017-core-components:
-  source: github:byuweb/byu-theme-components
 byu-theme-components:
   source: github:byuweb/byu-theme-components
 byu-card:
