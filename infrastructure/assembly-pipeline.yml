@@ -134,7 +134,7 @@ Resources:
         Packaging: none
       Environment:
         Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
+        ComputeType: BUILD_GENERAL1_MEDIUM
         Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/web-community-cdn-assembler:${Environment}"
         EnvironmentVariables:
           - Name: DESTINATION_S3_BUCKET
