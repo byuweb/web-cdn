@@ -29,6 +29,13 @@ Mappings:
       name: develop
     dev:
       name: aws-codebuild
+  CdnHostMap:
+    prod:
+      root: cdn.byu.edu
+    stg:
+      root: stg.cdn.byu.edu
+    dev:
+      root: dev.cdn.byu.edu
 
 Resources:
   CdnBuildPipelineArtifactStore:
@@ -142,6 +149,8 @@ Resources:
               Fn::ImportValue: !Sub "${HostingStackName}-ContentBucket"
           - Name: BUILD_ENV
             Value: !Ref Environment
+          - Name: CDN_HOST
+            Value: !FindInMap [CdnHostMap, !Ref Environment, root]
       Source:
         Type: CODEPIPELINE
       ServiceRole:
