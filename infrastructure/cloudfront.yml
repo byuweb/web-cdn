@@ -52,7 +52,7 @@ Resources:
         DefaultCacheBehavior:
           AllowedMethods: [GET, HEAD, OPTIONS]
           Compress: true
-          DefaultTTL: 3600
+          DefaultTTL: 300
           ForwardedValues:
             QueryString: 'true'
             Headers: [Origin]
