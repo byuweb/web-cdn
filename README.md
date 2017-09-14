@@ -44,11 +44,11 @@ Here's what version paths will be created for your library:
 * 1.1.0
 * 1.1.1
 * 2.0.0
-* 1 -> 1.1.1
-* 1.0 -> 1.0.2
-* 1.1 -> 1.1.1
-* 2 -> 2.0.0
-* 2.0 -> 2.0.0
+* 1.x.x -> 1.1.1
+* 1.0.x -> 1.0.2
+* 1.1.x -> 1.1.1
+* 2.x.x -> 2.0.0
+* 2.0.x -> 2.0.0
 * latest -> 2.0.0
 
 This allows a consumer to decide how automatic they want updates to be for their dependencies. Most users should generally
