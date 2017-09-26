@@ -33,7 +33,7 @@ Mappings:
     prod:
       root: cdn.byu.edu
     stg:
-      root: stg.cdn.byu.edu
+      root: beta.cdn.byu.edu
     dev:
       root: dev.cdn.byu.edu
 

@@ -24,10 +24,10 @@ Mappings:
       webhooks: webhooks.cdn.byu.edu
     stg:
       root: beta.cdn.byu.edu.
-      webhooks: webhooks.beta.cdn.byu.edu
+      webhooks: webhooks-beta.cdn.byu.edu
     dev:
       root: dev.cdn.byu.edu.
-      webhooks: webhooks.dev.cdn.byu.edu
+      webhooks: webhooks-dev.cdn.byu.edu
   Certs:
     #prd-appdev-oit-byu
     "427927161742":

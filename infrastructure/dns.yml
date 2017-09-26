@@ -14,9 +14,14 @@ Mappings:
     prod:
       root: cdn.byu.edu.
     stg:
-      root: stg.cdn.byu.edu.
+      root: beta.cdn.byu.edu.
+      webhooks: webhooks-beta.cdn.byu.edu
     dev:
       root: dev.cdn.byu.edu.
+      webhooks: webhooks-dev.cdn.byu.edu
+Conditions: 
+  FlatDns: !Or [ !Equals [ !Ref Environment, dev ], !Equals [ !Ref Environment, stg ] ]
+  NestedDns: !Equals [ !Ref Environment, prod ]
 Resources:
   DNS:
     Type: AWS::Route53::HostedZone
@@ -37,6 +42,29 @@ Resources:
       - Key: app
         Value: Web Community CDN
     DeletionPolicy: Retain
+  WebhookDNS:
+    Type: AWS::Route53::HostedZone
+    Condition: FlatDns
+    Properties:
+      HostedZoneConfig:
+        Comment: !Join [ " ", [ !Ref Environment, Web Community CDN Webhooks DNS Zone ] ]
+      Name: !FindInMap [ DNSSubdomainMap, !Ref Environment, webhooks ]
+      HostedZoneTags:
+      - Key: Name
+        Value: !Join [ " ", [ !FindInMap [ DNSSubdomainMap, !Ref Environment, root ], Web Community CDN Webhooks DNS Zone ] ]
+      - Key: team
+        # This isn't necessarily accurate, but it's the best group I can find for it.
+        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+      - Key: env
+        Value: !Ref Environment
+      - Key: data-sensitivity
+        Value: public
+      - Key: app
+        Value: Web Community CDN
+    DeletionPolicy: Retain
+
+  
+  
 Outputs:
   DNSZone:
     Description: DNS Zone ID
@@ -46,3 +74,12 @@ Outputs:
   NameServers:
     Description: DNS Name Servers
     Value: !Join [ ";", !GetAtt DNS.NameServers ]
+  WebhookDNSZone:
+    Condition: FlatDns
+    Description: Webhook DNS Zone ID
+    Value: !Ref DNS
+    Export:
+      Name: !Sub "${AWS::StackName}-WebhookDNS"
+  WebhookNameServers:
+    Description: Webhook DNS Name Servers
+    Value: !Join [ ";", !GetAtt WebhookDNS.NameServers ]
