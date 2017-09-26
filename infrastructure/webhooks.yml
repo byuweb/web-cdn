@@ -34,7 +34,7 @@ Mappings:
       cdn: arn:aws:acm:us-east-1:427927161742:certificate/66066e1d-6aac-49f4-8b52-bd699547b8d6
     #dev-oit-byu
     "818272543125":
-      cdn: ""
+      cdn: arn:aws:acm:us-east-1:818272543125:certificate/bdc29547-58fe-44cb-8c33-56032ba829f3 
     #trn-oit-byu
     "398230616010":
       cdn: arn:aws:acm:us-east-1:398230616010:certificate/811c7982-75e1-4565-b81b-4a4dad3e6b85
