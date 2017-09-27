@@ -36,8 +36,8 @@ Mappings:
       root: beta.cdn.byu.edu
     dev:
       root: dev.cdn.byu.edu
-
-Resources:
+      
+  Resources:
   CdnBuildPipelineArtifactStore:
     Type: AWS::S3::Bucket
     Properties:

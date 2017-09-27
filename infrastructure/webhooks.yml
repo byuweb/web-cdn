@@ -23,10 +23,10 @@ Mappings:
       root: cdn.byu.edu.
       webhooks: webhooks.cdn.byu.edu
     stg:
-      root: beta.cdn.byu.edu.
+      root: webhooks-beta.cdn.byu.edu.
       webhooks: webhooks-beta.cdn.byu.edu
     dev:
-      root: dev.cdn.byu.edu.
+      root: webhooks-dev.cdn.byu.edu.
       webhooks: webhooks-dev.cdn.byu.edu
   Certs:
     #prd-appdev-oit-byu
@@ -44,7 +44,7 @@ Mappings:
       branch: master
     stg:
       repo: byuweb/web-cdn
-      branch: master
+      branch: aws-codebuild
     dev:
       repo: byuweb/web-cdn
       branch: aws-codebuild
@@ -133,10 +133,3 @@ Resources:
         Value: public
       - Key: app
         Value: Web Community CDN
-
-#Outputs:
-#  WebhookApiConsole:
-#    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/apigateway/home?region=${AWS::Region}#/apis/${WebhookApi}/resources"
-#    Description: URL of the Webhook API Console
-
-
