@@ -7,6 +7,8 @@ byu-theme-components:
   source: github:byuweb/byu-theme-components
 byu-card:
   source: github:byuweb/byu-card
+byu-calendar:
+  source: github:byuweb/byu-calendar-component
 byu-calendar-row:
   source: github:byuweb/byu-calendar-row
 byu-calendar-tile:
