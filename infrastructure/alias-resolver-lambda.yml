@@ -19,7 +19,7 @@ Resources:
       Runtime: nodejs6.10
       MemorySize: 128
       Timeout: 3
-      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/web-community-cdn/edge-lambda"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/edge-lambda"
     Tags:
       - Key: Name
         Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Alias Resolver @Edge ] ]
@@ -32,9 +32,17 @@ Resources:
         Value: public
       - Key: app
         Value: Web Community CDN
+  AliasResolverFuncVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref AliasResolverFunc
 
 Outputs:
   AliasResolverName:
     Value: !Ref AliasResolverFunc
   AliasResolverArn:
     Value: !GetAtt AliasResolverFunc.Arn
+  AliasResolverVersionArn:
+    Value: !Ref AliasResolverFuncVersion
+  AliasResolverVersionNumber:
+    Value: !GetAtt AliasResolverFuncVersion.Version
