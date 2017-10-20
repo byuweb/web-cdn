@@ -13,6 +13,4 @@ node_modules/
 keys/
 dist/
 
-infrastructure/packaged-webhooks.yml
-
 .current-contents/

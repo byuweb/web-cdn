@@ -87,6 +87,24 @@ Resources:
               - Effect: "Allow"
                 Action: "codepipeline:StartPipelineExecution"
                 Resource: !Sub "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:web-community-cdn-*-assembler-pipeline"
+  EdgeLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /web-community-cdn/
+      RoleName: edge-lambda
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - "edgelambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 
 Outputs:
   AllowCloudFrontInvalidationPolicy:
