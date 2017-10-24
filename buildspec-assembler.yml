@@ -3,10 +3,11 @@ version: 0.2
 env:
   parameter-store:
     GITHUB_API_USER: web-community-cdn.stg.github.user
-    GITHUB_API_TOKEN: web-community-cdn.stg.github.token
+    GITHUB_API_TOKEN: web-community-cdn.dev.github.token
 
 phases:
   build:
     commands:
+      - printenv GITHUB_API_TOKEN
       - cdn-assembler --config main-config.yml --bucket $DESTINATION_S3_BUCKET --env $BUILD_ENV --verbose --cdn-host $CDN_HOST
 
