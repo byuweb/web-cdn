@@ -16,18 +16,8 @@ Parameters:
   HostingStackName:
     Type: String
     Description: CFN stack name of the hosting stack
-#  GithubOauthToken:
-#    Type: String
-#    NoEcho: true
 
 Mappings:
-  GithubBranch:
-    prod:
-      name: master
-    stg:
-      name: aws-codebuild
-    dev:
-      name: aws-codebuild
   CdnHostMap:
     prod:
       root: cdn.byu.edu
