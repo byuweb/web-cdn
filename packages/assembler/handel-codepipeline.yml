@@ -1,0 +1,64 @@
+---
+version: 1
+
+name: web-community-cdn-setup
+
+pipelines:
+  prod:
+    phases:
+      - type: github
+        name: GitHub
+        owner: byuweb
+        repo: web-cdn-assembler
+        branch: master
+      - type: codebuild
+        name: Build
+        build_image: aws/codebuild/docker:1.12.1
+        environment_variables:
+          ENV: prod
+      - type: slack_notify
+        name: Notify
+        message: "Prod CDN Assembler Build Finished"
+        channel: "@josephmoore"
+
+  beta:
+    phases:
+      - type: github
+        name: GitHub
+        owner: byuweb
+        repo: web-cdn-assembler
+        branch: master
+      - type: codebuild
+        name: Build
+        build_image: aws/codebuild/docker:1.12.1
+        environment_variables:
+          ENV: beta
+        extra_resources:
+          cache:
+            type: s3
+      - type: slack_notify
+        name: Notify
+        message: "Beta CDN Assembler Build Finished"
+        channel: "@josephmoore"
+
+  dev:
+    phases:
+      - type: github
+        name: GitHub
+        owner: byuweb
+        repo: web-cdn-assembler
+        branch: master
+      - type: codebuild
+        name: Build
+        build_image: aws/codebuild/docker:1.12.1
+        environment_variables:
+          ENV: dev
+        extra_resources:
+          cache:
+            type: s3
+      - type: slack_notify
+        name: Notify
+        message: "Dev CDN Assembler Build Finished"
+        channel: "@josephmoore"
+
+

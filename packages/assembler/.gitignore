@@ -1,0 +1,20 @@
+.github-api-key.json
+old-builder/
+
+node_modules/
+.tmp/
+
+# IDE files
+## Jetbrains
+.idea/
+*.iml
+## VS Code
+.vscode/
+
+keys/
+dist/
+
+
+.current-contents/
+
+_aws/*.sh
