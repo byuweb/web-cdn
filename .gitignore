@@ -1,5 +1,7 @@
 .github-api-key
 
+handel-secrets.txt
+
 node_modules/
 .tmp/
 
