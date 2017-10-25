@@ -5,8 +5,9 @@ phases:
     commands:
       - . .codebuild/setup.sh
       - lerna bootstrap
+      - lerna exec -- chmod a+x ./codebuild.sh
   build:
     commands:
-      - npx lerna ls
-      - npx lerna exec -- ./codebuild.sh
+      - lerna ls
+      - lerna exec -- ./codebuild.sh
 
