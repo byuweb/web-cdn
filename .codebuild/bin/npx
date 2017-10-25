@@ -1,3 +1,0 @@
-#!/bin/sh
-
-docker run --rm -i -v $PWD:/usr/src/app -w /usr/src/app local-node npx $@
