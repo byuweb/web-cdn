@@ -1,0 +1,22 @@
+---
+version: 1
+
+name: web-community-cdn
+
+pipelines:
+  beta:
+    phases:
+      - type: github
+        name: GitHub
+        owner: ThatJoeMoore
+        repo: web-cdn
+        branch: beta
+      - type: codebuild
+        name: Build
+        build_image: aws/codebuild/docker:1.12.1
+        environment_variables:
+          ENV: beta
+      - type: slack_notify
+        name: Notify
+        message: "(forked) Beta CDN Assembler Build Finished"
+        channel: "@josephmoore"
