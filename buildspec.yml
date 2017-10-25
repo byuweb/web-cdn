@@ -5,7 +5,11 @@ phases:
     commands:
       - chmod a+x .codebuild/setup.sh && .codebuild/setup.sh
       - yarn global add lerna
+  pre_build:
+    commands:
+      - lerna bootstrap
+      - lerna exec -- chmod a+x ./codebuild.sh
   build:
     commands:
-      - lerna ls
+      - lerna exec -- ./codebuild.sh
 
