@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "Building assembler"
+
 tag=$ENV
 if [ $ENV = "beta" ]; then
   TAG=stg

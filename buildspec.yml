@@ -10,5 +10,5 @@ phases:
       - lerna exec -- chmod a+x ./codebuild.sh
   build:
     commands:
-      - lerna exec -- echo Building $(pwd) && ./codebuild.sh
+      - lerna exec -- ./codebuild.sh
 
