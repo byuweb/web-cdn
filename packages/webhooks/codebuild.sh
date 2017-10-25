@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Building webhooks"
+echo "=========== Building webhooks ==========="
 
 set -e
 

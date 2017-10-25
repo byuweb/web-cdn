@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Building alias-resolver-lambda"
+echo "=========== Building alias-resolver-lambda ==========="
 
 set -e
 

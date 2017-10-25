@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Building assembler"
+echo "=========== Building assembler ==========="
 
 tag=$ENV
 if [ $ENV = "beta" ]; then
@@ -24,5 +24,5 @@ docker run --rm -i $image /bin/sh -c 'cd $ASSEMBLER_HOME; yarn install; yarn tes
 
 echo Pushing image as $image
 
-#docker push $image
+docker push $image
 
