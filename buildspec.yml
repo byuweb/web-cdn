@@ -1,7 +1,11 @@
 version: 0.2
 
 phases:
+  install:
+    commands:
+      - . .codebuild/aliases.sh
   build:
     commands:
-      - cdn-assembler --config main-config.yml --bucket $DESTINATION_S3_BUCKET --env $BUILD_ENV --verbose --cdn-host $CDN_HOST
+      - npx lerna ls
+      - npx lerna exec -- ./codebuild.sh
 

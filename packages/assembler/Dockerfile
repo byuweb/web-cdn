@@ -9,14 +9,14 @@ RUN mkdir -p /usr/src/assembler
 
 WORKDIR /usr/src/assembler
 
-ADD package.json package-lock.json ./
+ADD package.json yarn.lock ./
 
-RUN npm install --production \
-    && npm cache clean --force
+RUN yarn install --production \
+    && yarn cache clean
 
 ADD . ./
 
-RUN npm link
+RUN yarn link
 
 RUN mkdir -p /usr/src/app
 

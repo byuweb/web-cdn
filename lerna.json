@@ -4,5 +4,10 @@
     "packages/*"
   ],
   "version": "1.0.0",
-  "npmClient": "yarn"
+  "npmClient": "yarn",
+  "command": {
+    "exec": {
+      "concurrency": 1
+    }
+  }
 }
