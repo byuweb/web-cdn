@@ -3,6 +3,7 @@ version: 0.2
 phases:
   install:
     commands:
+      - ls -l .codebuild/
       - .codebuild/setup.sh
   build:
     commands:
