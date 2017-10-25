@@ -3,11 +3,15 @@ version: 0.2
 phases:
   install:
     commands:
-      - . .codebuild/setup.sh
-      - lerna bootstrap
-      - lerna exec -- chmod a+x ./codebuild.sh
+      - chmod a+x .codebuild/setup.sh && .codebuild/setup.sh
+      - node -version
+      - yarn -version
+      - yarn global add lerna
+#      - . .codebuild/setup.sh
+#      - lerna bootstrap
+#      - lerna exec -- chmod a+x ./codebuild.sh
   build:
     commands:
       - lerna ls
-      - lerna exec -- ./codebuild.sh
+#      - lerna exec -- ./codebuild.sh
 

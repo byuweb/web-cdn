@@ -1,13 +1,22 @@
 #!/bin/sh
 
-echo "Building Node image"
+#echo "Building Node image"
+#
+#docker build -t local-node -f .codebuild/node.dockerfile .codebuild/
+#
+#echo "Making sure permissions are correct"
+#
+#chmod a+x .codebuild/bin/*
+#
+#echo "Adding custom bin to path"
+#export PATH=$PATH:$PWD/.codebuild/bin
 
-docker build -t local-node -f .codebuild/node.dockerfile .codebuild/
+echo "Installing Nodejs and Yarn"
 
-echo "Making sure permissions are correct"
+curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 
-chmod a+x .codebuild/bin/*
+curl -sL https://deb.nodesource.com/setup_8.x | bash -
 
-echo "Adding custom bin to path"
-export PATH=$PATH:$PWD/.codebuild/bin
+apt-get update && apt-get install -y nodejs yarn
 
