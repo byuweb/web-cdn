@@ -4,7 +4,7 @@ phases:
   install:
     commands:
       - ls -l .codebuild/
-      - .codebuild/setup.sh
+      - . .codebuild/setup.sh
   build:
     commands:
       - npx lerna ls
