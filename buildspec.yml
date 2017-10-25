@@ -1,12 +1,11 @@
 version: 0.2
 
 phases:
-#  install:
-#    commands:
-#      - . .codebuild/aliases.sh
+  install:
+    commands:
+      - .codebuild/setup.sh
   build:
     commands:
-      - . .codebuild/aliases.sh
       - npx lerna ls
       - npx lerna exec -- ./codebuild.sh
 
