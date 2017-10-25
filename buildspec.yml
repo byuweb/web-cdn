@@ -3,8 +3,8 @@ version: 0.2
 phases:
   install:
     commands:
-      - ls -l .codebuild/
       - . .codebuild/setup.sh
+      - lerna bootstrap
   build:
     commands:
       - npx lerna ls

@@ -1,8 +1,8 @@
 #!/bin/sh
 
-echo "Pulling Node image"
+echo "Building Node image"
 
-docker pull node:8-alpine
+docker build -t local-node -f .codebuild/node.dockerfile .codebuild/
 
 echo "Making sure permissions are correct"
 
