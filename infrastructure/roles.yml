@@ -102,9 +102,120 @@ Resources:
                 - "edgelambda.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-      Path: "/"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+
+  CloudformationDeploymentRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Path: /web-community-cdn/
+      RoleName: web-community-cdn-cfn-deploy
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: AllowAssemblerImageAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ecr:GetAuthorizationToken'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:GetRepositoryPolicy'
+                  - 'ecr:DescribeRepositories'
+                  - 'ecr:ListImages'
+                  - 'ecr:DescribeImages'
+                  - 'ecr:BatchGetImage'
+                Resource:
+                  - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/web-community-cdn-*"
+        - PolicyName: AllowCodebuildAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'codebuild:*'
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/web-community-cdn-*"
+        - PolicyName: AllowS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:*'
+                Resource:
+                  - 'arn:aws:s3:::bucket/web-community-cdn-*'
+        - PolicyName: AllowApiGatewayAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'apigateway:*'
+                Resource:
+                  - '*'
+        - PolicyName: AllowCloudFormationAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'cloudformation:*'
+                Resource:
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/web-community-cdn-*"
+        - PolicyName: AllowCloudFrontAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'cloudfront:*'
+                Resource:
+                  - '*'
+        - PolicyName: AllowLambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:*'
+                Resource:
+                  - !Sub "arn:aws:lambda::${AWS::AccountId}:function/web-community-cdn-*"
+        - PolicyName: AllowRoute53Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'route53:*'
+                Resource:
+                  - '*'
+        - PolicyName: AllowPassRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'iam:GetRole'
+                  - 'iam:PassRole'
+                Resource:
+                  - "arn:aws:iam::*:role/web-community-cdn/*"
+              # Deny the ability to pass ourself as a role to another service
+              - Effect: Deny
+                Action:
+                  - 'iam:PassRole'
+                Resource:
+                  - "arn:aws:iam::*:role/web-community-cdn/cfn-deploy"
+
 
 Outputs:
   AllowCloudFrontInvalidationPolicy:
@@ -122,4 +233,9 @@ Outputs:
     Value: !GetAtt CdnBuildInvokerRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-InvokerRole"
+  CloudformationDeploymentRole:
+    Description: ARN of the role for the CDN pipeline
+    Value: !GetAtt CloudformationDeploymentRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-CloudformationDeploymentRole"
 

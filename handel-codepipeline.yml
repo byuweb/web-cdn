@@ -16,7 +16,9 @@ pipelines:
         build_image: aws/codebuild/docker:1.12.1
         environment_variables:
           ENV: beta
+        build_role: web-community-cdn-cfn-deploy
       - type: slack_notify
         name: Notify
         message: "(forked) Beta CDN Assembler Build Finished"
         channel: "@josephmoore"
+
