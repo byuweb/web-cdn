@@ -20,7 +20,7 @@ aws cloudformation validate-template \
 
 aws cloudformation package \
     --template-file $here/infrastructure.yml \
-    --s3-bucket byu-web-community-infra-staging-$env \
+    --s3-bucket byu-web-community-cdn-infra-staging-$env \
     --output-template-file $packaged
 
 aws cloudformation deploy \

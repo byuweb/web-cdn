@@ -165,7 +165,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
-      BucketName: !Sub "byu-web-community-infra-staging-${Environment}"
+      BucketName: !Sub "byu-web-community-cdn-infra-staging-${Environment}"
       Tags:
       - Key: Name
         Value: Web Community CDN Cloudformation Staging Bucket
