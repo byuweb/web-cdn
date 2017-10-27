@@ -11,5 +11,6 @@ phases:
   build:
     commands:
       - lerna exec -- ./codebuild.sh
+      - chmod a+x infrastructure/deploy-infrastructure.sh
       - infrastructure/deploy-infrastructure.sh $ENV
 
