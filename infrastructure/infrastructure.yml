@@ -1,0 +1,312 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  Environment:
+    Type: String
+    Description: Deployment environment
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+  RolesStackName:
+    Type: String
+    Description: CFN stack name of the Roles stack
+    Default: web-community-cdn-roles
+  DnsStackName:
+    Type: String
+    Description: CFN stack name of the DNS stack
+  ApplyDns:
+    Type: String
+    Description: Whether or not to create DNS records
+    Default: true
+    AllowedValues:
+      - true
+      - false
+
+Mappings:
+  Certs:
+    #prd-appdev-oit-byu
+    "427927161742":
+      cdn: arn:aws:acm:us-east-1:427927161742:certificate/66066e1d-6aac-49f4-8b52-bd699547b8d6
+    #dev-oit-byu
+    "818272543125":
+      cdn: arn:aws:acm:us-east-1:818272543125:certificate/bdc29547-58fe-44cb-8c33-56032ba829f3
+    #trn-oit-byu
+    "398230616010":
+      cdn: arn:aws:acm:us-east-1:398230616010:certificate/811c7982-75e1-4565-b81b-4a4dad3e6b85
+  GithubConfig:
+    prod:
+      repo: byuweb/web-cdn
+      branch: master
+    stg:
+      repo: byuweb/web-cdn
+      branch: aws-codebuild
+    dev:
+      repo: byuweb/web-cdn
+      branch: aws-codebuild
+  CacheTTL:
+    prod:
+      default: 3600
+      max: 86400
+      min: 0
+    stg:
+      default: 30
+      max: 300
+      min: 0
+    dev:
+      default: 30
+      max: 300
+      min: 0
+
+Conditions:
+  FlatDns: !Or [ !Equals [ !Ref Environment, dev ], !Equals [ !Ref Environment, stg ] ]
+  NestedDns: !Equals [ !Ref Environment, prod ]
+  ApplyDns: !Equals [ !Ref ApplyDns, true ]
+
+Resources:
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Sub "byu-web-community-cdn-contents-${Environment}"
+      CorsConfiguration:
+        CorsRules:
+        - Id: AllowAllGets
+          AllowedHeaders: ['*']
+          AllowedMethods: [GET]
+          AllowedOrigins: ['*']
+          ExposedHeaders: [Date]
+          MaxAge: '3600'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      Tags:
+      - Key: Name
+        Value: !Sub "Web Community CDN ${Environment} Contents"
+      - Key: team
+        # This isn't necessarily accurate, but it's the best group I can find for it.
+        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+      - Key: env
+        Value: !Ref Environment
+      - Key: data-sensitivity
+        Value: public
+      - Key: app
+        Value: Web Community CDN
+
+  ContentBucketAllowBuilderUpdates:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${RolesStackName}-BuilderRole"
+            Action:
+              - s3:ListBucket
+              - s3:PutBucketWebsite
+              - s3:Get*
+            Resource: !Sub "arn:aws:s3:::${ContentBucket}"
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${RolesStackName}-BuilderRole"
+            Action:
+              - s3:*
+            Resource: !Sub "arn:aws:s3:::${ContentBucket}/*"
+
+  CdnBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "web-community-cdn-${Environment}-assembler-test"
+      Description: Assembles, builds, and deploys the contents of the BYU Web Community CDN
+      Artifacts:
+        Type: no_artifacts
+      Source:
+        Type: GITHUB
+        Location: https://github.com/byuweb/web-cdn.git
+        Auth:
+          Type: OAUTH
+        BuildSpec: buildspec-assembler.yml
+      TimeoutInMinutes: 10
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/web-community-cdn-assembler:${Environment}"
+        EnvironmentVariables:
+          - Name: DESTINATION_S3_BUCKET
+            Value: !Ref ContentBucket
+          - Name: BUILD_ENV
+            Value: !Ref Environment
+          - Name: CDN_HOST
+            Value:
+              Fn::ImportValue:
+                !Sub "${DnsStackName}-RootDnsName"
+      ServiceRole:
+        Fn::ImportValue: !Sub "${RolesStackName}-BuilderRole"
+      Tags:
+        - Key: Name
+          Value: !Sub "Web Community CDN ${Environment} Assembler"
+        - Key: team
+          # This isn't necessarily accurate, but it's the best group I can find for it.
+          Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+        - Key: env
+          Value: !Ref Environment
+        - Key: data-sensitivity
+          Value: public
+        - Key: app
+          Value: Web Community CDN
+
+  # This bucket is for hosting our cloudformation while we deploy our lambdas
+  CfnStagingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "byu-web-community-infra-staging-${Environment}"
+      Tags:
+      - Key: Name
+        Value: Web Community CDN Cloudformation Staging Bucket
+      - Key: team
+        # This isn't necessarily accurate, but it's the best group I can find for it.
+        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+      - Key: env
+        Value: !Ref Environment
+      - Key: data-sensitivity
+        Value: public
+      - Key: app
+        Value: Web Community CDN
+
+  WebhookDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !FindInMap [ Certs, !Ref "AWS::AccountId", cdn ]
+      DomainName:
+        Fn::ImportValue:
+          !Sub "${DnsStackName}-WebhookDnsName"
+
+  WebhookBasePath:
+    DependsOn: [WebhookFunc]
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref WebhookDomain
+  # This is a hack.  We're depending on some auto-generated names that could change at any time.
+      RestApiId: !Ref ServerlessRestApi
+      Stage: !Ref ServerlessRestApiProdStage
+
+  WebhookFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./../packages/webhooks/
+      Handler: lambda.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 60
+      Role:
+        Fn::ImportValue: !Sub "${RolesStackName}-InvokerRole"
+      Environment:
+        Variables:
+          CDN_BUILDER_NAME: !Ref CdnBuildProject
+          CDN_MAIN_CONFIG_REPO: !FindInMap [ GithubConfig, !Ref Environment, repo ]
+          CDN_MAIN_CONFIG_BRANCH: !FindInMap [ GithubConfig, !Ref Environment, branch ]
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: POST
+    Tags:
+      - Key: Name
+        Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Github Webhook Receiver ] ]
+      - Key: team
+        # This isn't necessarily accurate, but it's the best group I can find for it.
+        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+      - Key: env
+        Value: !Ref Environment
+      - Key: data-sensitivity
+        Value: public
+      - Key: app
+        Value: Web Community CDN
+
+  WebhookDNS:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: ApplyDns
+    Properties:
+      HostedZoneId:
+        Fn::ImportValue:
+          !Sub "${DnsStackName}-WebhookDnsZoneId"
+      Comment: DNS for CDN Webhooks
+      RecordSets:
+        - Name:
+            Fn::ImportValue:
+              !Sub "${DnsStackName}-WebhookDnsName"
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebhookDomain.DistributionDomainName
+        - Name:
+            Fn::ImportValue:
+              !Sub "${DnsStackName}-WebhookDnsName"
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebhookDomain.DistributionDomainName
+
+  WebsiteCloudfront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub "${Environment} Web Community CDN"
+        Aliases:
+         - Fn::ImportValue:
+             !Sub "${DnsStackName}-RootDnsName"
+        Enabled: 'true'
+        HttpVersion: http2
+        ViewerCertificate:
+          AcmCertificateArn: !FindInMap [ Certs, !Ref "AWS::AccountId", cdn ]
+          SslSupportMethod: sni-only
+        DefaultCacheBehavior:
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          ForwardedValues:
+            QueryString: 'true'
+            Headers: [Origin]
+          TargetOriginId: only-origin
+          ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: !FindInMap [ CacheTTL, !Ref Environment, default ]
+          MaxTTL: !FindInMap [ CacheTTL, !Ref Environment, max ]
+          MinTTL: !FindInMap [ CacheTTL, !Ref Environment, min ]
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        Origins:
+        - Id: only-origin
+          DomainName: !GetAtt ContentBucket.DomainName
+          S3OriginConfig:
+            OriginAccessIdentity: ''
+
+  WebsiteDNS:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: ApplyDns
+    Properties:
+      HostedZoneId:
+        Fn::ImportValue:
+          !Sub "${DnsStackName}-RootDnsZoneId"
+      Comment: DNS for CDN
+      RecordSets:
+        - Name:
+            Fn::ImportValue:
+              !Sub "${DnsStackName}-RootDnsName"
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebsiteCloudfront.DomainName
+        - Name:
+            Fn::ImportValue:
+              !Sub "${DnsStackName}-RootDnsName"
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebsiteCloudfront.DomainName
+

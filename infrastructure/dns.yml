@@ -11,13 +11,16 @@ Parameters:
       - prod
 Mappings:
   DNSSubdomainMap:
+    # cleanRoot exists because there's no good way to remove the final . on the root, and we can't change it without
+    #   killing the existing zone
     prod:
-      root: cdn.byu.edu.
+      root: cdn.byu.edu
+      webhooks: webhooks.cdn.byu.edu
     stg:
-      root: beta.cdn.byu.edu.
+      root: beta.cdn.byu.edu
       webhooks: webhooks-beta.cdn.byu.edu
     dev:
-      root: dev.cdn.byu.edu.
+      root: dev.cdn.byu.edu
       webhooks: webhooks-dev.cdn.byu.edu
 Conditions: 
   FlatDns: !Or [ !Equals [ !Ref Environment, dev ], !Equals [ !Ref Environment, stg ] ]
@@ -28,7 +31,9 @@ Resources:
     Properties:
       HostedZoneConfig:
         Comment: !Join [ " ", [ !Ref Environment, Web Community CDN DNS Zone ] ]
-      Name: !FindInMap [ DNSSubdomainMap, !Ref Environment, root ]
+      Name: !Sub
+        - ${Domain}.
+        - { Domain: !FindInMap [ DNSSubdomainMap, !Ref Environment, root ] }
       HostedZoneTags:
       - Key: Name
         Value: !Join [ " ", [ !FindInMap [ DNSSubdomainMap, !Ref Environment, root ], Web Community CDN DNS Zone ] ]
@@ -63,23 +68,39 @@ Resources:
         Value: Web Community CDN
     DeletionPolicy: Retain
 
-  
-  
 Outputs:
-  DNSZone:
-    Description: DNS Zone ID
+  RootDnsName:
+    Description: Root DNS Name
+    Value: !FindInMap [ DNSSubdomainMap, !Ref Environment, root ]
+    Export:
+      Name: !Sub "${AWS::StackName}-RootDnsName"
+  RootDnsZoneId:
+    Description: Root DNS Zone ID
     Value: !Ref DNS
     Export:
-      Name: !Sub "${AWS::StackName}-DNS"
-  NameServers:
-    Description: DNS Name Servers
+      Name: !Sub "${AWS::StackName}-RootDnsZoneId"
+  RootDnsNameServers:
+    Description: Root DNS Name Servers
     Value: !Join [ ";", !GetAtt DNS.NameServers ]
-  WebhookDNSZone:
-    Condition: FlatDns
+    
+  WebhookDnsName:
+    Description: Webhook DNS Name
+    Value: !FindInMap [ DNSSubdomainMap, !Ref Environment, webhooks ]
+    Export:
+      Name: !Sub "${AWS::StackName}-WebhookDnsName"
+  NestedWebhookDnsZoneId:
+    Condition: NestedDns
     Description: Webhook DNS Zone ID
     Value: !Ref DNS
     Export:
-      Name: !Sub "${AWS::StackName}-WebhookDNS"
-  WebhookNameServers:
+      Name: !Sub "${AWS::StackName}-WebhookDnsZoneId"
+  FlatWebhookDnsZoneId:
+    Condition: FlatDns
+    Description: Webhook DNS Zone ID
+    Value: !Ref WebhookDNS
+    Export:
+      Name: !Sub "${AWS::StackName}-WebhookDnsZoneId"
+  WebhookDnsNameServers:
+    Condition: FlatDns
     Description: Webhook DNS Name Servers
-    Value: !Join [ ";", !GetAtt WebhookDNS.NameServers ]
+    Value: !Join [ ";", !GetAtt DNS.NameServers ]
