@@ -11,7 +11,7 @@ fi
 
 packaged=/tmp/web-community-packaged-infrastructure-$(date +"%s").yml
 
-here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 set -e
 
