@@ -4,23 +4,24 @@ env=$1
 
 dns_stack=web-community-cdn-dns-$env
 
+packaged=/tmp/web-community-packaged-infrastructure-$(date +"%s").yml
+
 if [ "$env" = "prod" ]; then
   dns_stack=WebCommunityCDN-dns
 fi
 
-#
-#cd ../webhooks
-#
-#npm install
-#
-#cd ../infrastructure
+here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-aws cloudformation validate-template --template-body file://infrastructure.yml
+aws cloudformation validate-template \
+    --template-body file://$here/infrastructure.yml
 
-aws cloudformation package --template-file infrastructure.yml --s3-bucket byu-web-community-infra-staging-$env \
-    --output-template-file packaged-infrastructure.yml
+aws cloudformation package \
+    --template-file $here/infrastructure.yml \
+    --s3-bucket byu-web-community-infra-staging-$env \
+    --output-template-file $packaged
 
-aws cloudformation deploy --template-file packaged-infrastructure.yml \
+aws cloudformation deploy \
+    --template-file $packaged \
     --stack-name web-community-cdn-$env \
     --parameter-overrides \
       Environment=$env \

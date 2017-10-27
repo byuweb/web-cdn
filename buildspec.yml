@@ -11,4 +11,5 @@ phases:
   build:
     commands:
       - lerna exec -- ./codebuild.sh
+      - cd infrastructure && deploy-infrastructure.sh && cd ..
 
