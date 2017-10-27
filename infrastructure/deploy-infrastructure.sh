@@ -1,16 +1,19 @@
-#!/usr/bin/env bash -e
+#!/bin/sh
+
 
 env=$1
 
 dns_stack=web-community-cdn-dns-$env
 
-packaged=/tmp/web-community-packaged-infrastructure-$(date +"%s").yml
-
 if [ "$env" = "prod" ]; then
   dns_stack=WebCommunityCDN-dns
 fi
 
+packaged=/tmp/web-community-packaged-infrastructure-$(date +"%s").yml
+
 here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+set -e
 
 aws cloudformation validate-template \
     --template-body file://$here/infrastructure.yml
