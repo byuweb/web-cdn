@@ -4,7 +4,7 @@ echo "=========== Building assembler ==========="
 
 tag=$ENV
 if [ $ENV = "beta" ]; then
-  TAG=stg
+  tag=stg
 fi
 
 set -e
@@ -12,7 +12,7 @@ set -e
 echo Logging into ECR
 $(aws ecr get-login --region $AWS_REGION)
 
-image="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/web-community-cdn-assembler:$TAG"
+image="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/web-community-cdn-assembler:$tag"
 
 echo Building Docker Image
 

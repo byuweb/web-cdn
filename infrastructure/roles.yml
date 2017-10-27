@@ -131,22 +131,35 @@ Resources:
                   - 'logs:PutLogEvents'
                 Resource:
                  - '*'
+        - PolicyName: AllowPipelineBucketAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                  - 's3:PutObject'
+                Resource:
+                 - !Sub 'arn:aws:s3:::codepipeline-${AWS::Region}-${AWS::AccountId}/*'
         - PolicyName: AllowAssemblerImageAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - 'ecr:GetAuthorizationToken'
-                  - 'ecr:BatchCheckLayerAvailability'
-                  - 'ecr:GetDownloadUrlForLayer'
-                  - 'ecr:GetRepositoryPolicy'
-                  - 'ecr:DescribeRepositories'
-                  - 'ecr:ListImages'
-                  - 'ecr:DescribeImages'
-                  - 'ecr:BatchGetImage'
+                  - 'ecr:*'
                 Resource:
                   - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/web-community-cdn-*"
+        - PolicyName: AllowECRLogin
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ecr:GetAuthorizationToken'
+                Resource:
+                  - '*'
         - PolicyName: AllowCodebuildAccess
           PolicyDocument:
             Version: '2012-10-17'
