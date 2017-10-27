@@ -1,16 +1,16 @@
 version: 0.2
 
 phases:
-  install:
-    commands:
-      - chmod a+x .codebuild/setup.sh && .codebuild/setup.sh
-  pre_build:
-    commands:
-      - lerna bootstrap
-      - lerna exec -- chmod a+x ./codebuild.sh
+#  install:
+#    commands:
+#      - chmod a+x .codebuild/setup.sh && .codebuild/setup.sh
+#  pre_build:
+#    commands:
+#      - lerna bootstrap
+#      - lerna exec -- chmod a+x ./codebuild.sh
   build:
     commands:
-      - lerna exec -- ./codebuild.sh
+#      - lerna exec -- ./codebuild.sh
       - chmod a+x infrastructure/deploy-infrastructure.sh
       - infrastructure/deploy-infrastructure.sh $ENV
 

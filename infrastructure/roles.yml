@@ -151,10 +151,6 @@ Resources:
                   - 'ecr:*'
                 Resource:
                   - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/web-community-cdn-*"
-        - PolicyName: AllowECRLogin
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
               - Effect: Allow
                 Action:
                   - 'ecr:GetAuthorizationToken'
@@ -178,6 +174,7 @@ Resources:
                   - 's3:*'
                 Resource:
                   - 'arn:aws:s3:::bucket/web-community-cdn-*'
+                  - 'arn:aws:s3:::bucket/byu-web-community-cdn-*'
         - PolicyName: AllowApiGatewayAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -196,6 +193,11 @@ Resources:
                   - 'cloudformation:*'
                 Resource:
                   - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/web-community-cdn-*"
+              - Effect: Allow
+                Action:
+                  - 'cloudformation:ValidateTemplate'
+                Resource:
+                  - '*'
         - PolicyName: AllowCloudFrontAccess
           PolicyDocument:
             Version: '2012-10-17'
