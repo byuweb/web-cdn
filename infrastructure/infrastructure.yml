@@ -199,6 +199,7 @@ Resources:
   WebhookFunc:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "web-community-cdn-webhooks-${Environment}"
       CodeUri: ./../packages/webhooks/
       Handler: lambda.handler
       Runtime: nodejs6.10
