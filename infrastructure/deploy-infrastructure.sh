@@ -36,8 +36,6 @@ fi
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
-set -e
-
 aws cloudformation validate-template \
     --template-body file://$here/infrastructure.yml
 
@@ -48,11 +46,19 @@ aws cloudformation package \
     --s3-bucket $staging_bucket_or \
     --output-template-file $packaged
 
-aws cloudformation deploy \
+if aws cloudformation deploy \
     --template-file $packaged \
     --stack-name web-community-cdn-$env \
     --parameter-overrides \
       Environment=$env \
       DnsStackName=$dns_stack \
-      ApplyDns=true
+      ApplyDns=true 2>/tmp/cfn-error.txt; then
+  echo "Deployment Finished"
+elif grep "The submitted information didn't contain changes" /tmp/cfn-error.txt; then
+  echo "No changes"
+else
+  echo "Error running cloudformation:"
+  cat /tmp/cfn-error.txt
+fi
+
 
