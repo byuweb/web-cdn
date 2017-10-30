@@ -160,25 +160,6 @@ Resources:
         - Key: app
           Value: Web Community CDN
 
-  # This bucket is for hosting our cloudformation while we deploy our lambdas
-  CfnStagingBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      BucketName: !Sub "byu-web-community-cdn-infra-staging-${Environment}"
-      Tags:
-      - Key: Name
-        Value: Web Community CDN Cloudformation Staging Bucket
-      - Key: team
-        # This isn't necessarily accurate, but it's the best group I can find for it.
-        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
-      - Key: env
-        Value: !Ref Environment
-      - Key: data-sensitivity
-        Value: public
-      - Key: app
-        Value: Web Community CDN
-
   WebhookDomain:
     Type: AWS::ApiGateway::DomainName
     Properties:
