@@ -54,6 +54,7 @@ exports.handler = function handler(event, context, callback) {
     });
 
     function doDelete() {
+        console.log('Deleting');
         return lambdaEast.deleteFunction({FunctionName: physicalId}).promise()
             .catch(err => {
                 if (err.name === 'ResourceNotFoundException') {
@@ -69,13 +70,18 @@ exports.handler = function handler(event, context, callback) {
     }
 
     function doCreateOrUpdate() {
+        console.log('creating or updating');
         let getTarget = lambdaEast.getFunction({FunctionName: functionName}).promise()
             .catch(err => null);
 
         let getSource = lambdaWest.getFunction({FunctionName: functionName}).promise();
 
         return Promise.all([getTarget, getSource]).then(([target, source]) => {
+            console.log('Got source config:', JSON.stringify(source, null, 2));
+            console.log('Got target config:', JSON.stringify(target, null, 2));
             let newConfig = copyConfig(source.Configuration);
+
+            console.log('Config should match', JSON.stringify(newConfig, null, 2));
 
             if (target) {
                 return updateTarget(source, target, newConfig);
@@ -83,15 +89,18 @@ exports.handler = function handler(event, context, callback) {
                 return createTarget(source, newConfig);
             }
         }).then(updateResult => {
+            console.log('Finished update or create with result', JSON.stringify(updateResult, null, 2));
             let newConfig = updateResult.config;
 
             let versionPromise;
 
             if (updateResult.publish) {
+                console.log('Publishing new version');
                 versionPromise = lambdaEast.publishVersion({
                     FunctionName: newConfig.FunctionName,
                     CodeSha256: newConfig.CodeSha256
                 }).promise().then(result => {
+                    console.log('Published new version', result.Version);
                     return Number(result.Version)
                 });
             } else {
@@ -100,12 +109,12 @@ exports.handler = function handler(event, context, callback) {
 
             return versionPromise.then(version => {
                 return {
-                    id: newConfig.FunctionArn,
+                    id: updateResult.id,
                     attributes: {
                         FunctionName: newConfig.FunctionName,
-                        FunctionArn: newConfig.FunctionArn,
+                        FunctionArn: updateResult.id,
                         Version: version,
-                        VersionArn: newConfig.FunctionArn + ':' + version
+                        VersionArn: updateResult.id + ':' + version
                     }
                 };
             })
@@ -142,25 +151,32 @@ exports.handler = function handler(event, context, callback) {
                 newConfig.Publish = true;
                 return lambdaEast.createFunction(newConfig).promise()
                     .then(cfg => {
+                        console.log('Created new function');
                         return {
                             publish: false, //We're publishing as part of the create
                             config: cfg,
+                            id: cfg.FunctionArn
                         }
                     })
             });
     }
 
     function updateTarget(source, target, newConfig) {
-        console.log('updateTarget', source);
+        console.log('updating target');
 
         return lambdaEast.updateFunctionConfiguration(newConfig).promise()
             .then(result => {
+                console.log('Finished updating function configuration');
                 if (source.Configuration.CodeSha256 === target.Configuration.CodeSha256) {
+                    console.log('Code hasn\'t changed');
                     return {
                         publish: configIsDifferent(source, target),
-                        config: result
+                        config: result,
+                        id: physicalId
                     };
                 }
+
+                console.log('Updating Code');
 
                 return fetch(source.Code.Location).then(resp => resp.buffer())
                     .then(zip => {
@@ -170,20 +186,27 @@ exports.handler = function handler(event, context, callback) {
                             ZipFile: zip
                         }).promise();
                     }).then(cfg => {
+                        console.log('Updated function code');
                         return {
                             publish: false, //We're publishing as part of the code update
                             config: cfg,
+                            id: physicalId
                         }
                     });
             });
     }
 
     function getLatestEastVersion(functionName) {
+        console.log('Getting latest version in us-east-1 of', functionName);
         return makeCall(null, []).then(versions => {
             let versionNumbers = versions.map(it => Number(it.Version))
                 .filter(it => !isNaN(it));//Filter out non-numeric versions, like '$LATEST'
 
-            return String(versionNumbers.reduce((acc, cur) => Math.max(acc, cur)));
+            console.log('Got version numbers', versionNumbers);
+
+            let version =  String(versionNumbers.reduce((acc, cur) => Math.max(acc, cur)));
+            console.log('got version', version);
+            return version;
         });
 
         function makeCall(marker, previousResult) {

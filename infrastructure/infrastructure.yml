@@ -48,8 +48,8 @@ Mappings:
       repo: byuweb/web-cdn
       branch: aws-codebuild
     dev:
-      repo: byuweb/web-cdn
-      branch: aws-codebuild
+      repo: ThatJoeMoore/web-cdn
+      branch: beta
   CacheTTL:
     prod:
       default: 3600
@@ -341,6 +341,19 @@ Resources:
       ServiceToken: !GetAtt CopyLambdaToVirginia.Arn
       LambdaFunctionName: !Ref AliasResolverFunc
       Nonce: !Ref Nonce
+
+  ConfigureCloudfrontMissingProperties:
+    # This will take the current alias resolver and push it to us-east-1
+    #  and push a new version to us-east-1.
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./custom-resources/configure-cloudfront/
+      Handler: index.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 60
+      Role:
+        Fn::ImportValue: !Sub "${RolesStackName}-CloudformationCustomResourcesRole"
 
 Outputs:
   EdgeLambdaArn:

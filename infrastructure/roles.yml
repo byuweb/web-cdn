@@ -134,6 +134,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'cloudfront:*'
+                  - 'iam:CreateServiceLinkedRole'
                 Resource:
                   - '*'
         - PolicyName: "AllowLambdaManipulation"

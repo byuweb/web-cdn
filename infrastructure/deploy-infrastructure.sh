@@ -40,7 +40,7 @@ if ! aws s3api head-bucket --bucket $staging_bucket_va; then
 fi
 
 cd $here/custom-resources/copy-lambda && yarn || exit 1
-#cd $here/custom-resources/configure-cloudfront && yarn || exit 1
+cd $here/custom-resources/configure-cloudfront && yarn || exit 1
 cd $working
 
 aws cloudformation validate-template \
@@ -62,6 +62,7 @@ if aws cloudformation deploy \
       Nonce=$nonce \
       ApplyDns=true 2>/tmp/cfn-error.txt; then
   echo "Deployment Finished"
+  rm $packaged
 elif grep "The submitted information didn't contain changes" /tmp/cfn-error.txt; then
   echo "No changes"
 else

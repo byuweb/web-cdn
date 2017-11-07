@@ -1,10 +1,5 @@
 version: 0.2
 
-env:
-  parameter-store:
-    GITHUB_API_USER: web-community-cdn.stg.github.user
-    GITHUB_API_TOKEN: web-community-cdn.stg.github.token
-
 phases:
   build:
     commands:
@@ -15,6 +10,4 @@ phases:
         --env $BUILD_ENV
         --verbose
         --cdn-host $CDN_HOST
-        --github-user $GITHUB_API_USER
-        --github-token $GITHUB_API_TOKEN
 
