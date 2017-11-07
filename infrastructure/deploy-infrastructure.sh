@@ -68,29 +68,3 @@ else
   echo "Error running cloudformation:"
   cat /tmp/cfn-error.txt
 fi
-
-#npm install -g mustache
-#
-#cd $here/../packages/alias-resolver-lambda/ && zip -r /tmp/lambda.zip . && cd $working
-#
-#echo {\"codeShaShort\": \"$(shasum /tmp/lambda.zip | cut -c1-6)\"} | mustache - $here/alias-resolver-lambda.yml.mustache > $here/alias-resolver-lambda-templated.yml
-#
-#aws cloudformation validate-template \
-#    --template-body file://$here/alias-resolver-lambda-templated.yml \
-#    --region us-east-1
-#
-#aws cloudformation package \
-#    --template-file $here/alias-resolver-lambda-templated.yml \
-#    --s3-bucket $staging_bucket_va \
-#    --output-template-file /tmp/packaged-alias-resolver-lambda.yml \
-#    --region us-east-1
-#
-#aws cloudformation deploy \
-#    --template-file /tmp/packaged-alias-resolver-lambda.yml \
-#    --stack-name web-community-cdn-alias-resolver-$env \
-#    --parameter-overrides \
-#      Environment=$env \
-#    --region us-east-1
-#
-#
-
