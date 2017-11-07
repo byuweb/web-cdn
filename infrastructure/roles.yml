@@ -91,7 +91,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       Path: /web-community-cdn/
-      RoleName: edge-lambda
+      RoleName: web-community-cdn-edge-lambda
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -104,6 +104,72 @@ Resources:
               - "sts:AssumeRole"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+
+  CloudformationCustomResourcesRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Path: /web-community-cdn/
+      RoleName: web-community-cdn-cfn-custom-res
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/AccountAdministrator"
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - PolicyName: "AllowCloudfrontManipulation"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'cloudfront:*'
+                Resource:
+                  - '*'
+        - PolicyName: "AllowLambdaManipulation"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:*'
+                Resource:
+                  - !Sub "arn:aws:lambda:us-west-2:${AWS::AccountId}:function:web-community-cdn-*"
+                  - !Sub "arn:aws:lambda:us-east-1:${AWS::AccountId}:function:web-community-cdn-*"
+              - Effect: Allow
+                Action:
+                  - 'lambda:TagResource'
+                  - 'lambda:UntagResource'
+                  - 'lambda:ListTags'
+                Resource:
+                  - '*'
+        - PolicyName: AllowPassRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'iam:GetRole'
+                  - 'iam:PassRole'
+                Resource:
+                  - "arn:aws:iam::*:role/web-community-cdn/*"
+              # Deny the ability to pass the all-powerful cloudformation role
+              - Effect: Deny
+                Action:
+                  - 'iam:PassRole'
+                Resource:
+                  - "arn:aws:iam::*:role/web-community-cdn/cfn-deploy"
+
 
   CloudformationDeploymentRole:
     Type: 'AWS::IAM::Role'
@@ -258,18 +324,13 @@ Resources:
 
 
 Outputs:
-  AllowCloudFrontInvalidationPolicy:
-    Description: ARN of the policy for allowing Cloud Front Invalidations
-    Value: !Sub "arn:aws:iam::${AWS::AccountId}:policy/${AllowCloudFrontInvalidation}"
-    Export:
-      Name: !Sub "${AWS::StackName}-AllowCloudFrontInvalidationPolicy"
   BuilderRole:
     Description: ARN of the role for the CDN build process
     Value: !GetAtt CdnBuilderRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-BuilderRole"
   InvokerRole:
-    Description: ARN of the role for the CDN build process
+    Description: ARN of the role for the CDN build invoker
     Value: !GetAtt CdnBuildInvokerRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-InvokerRole"
@@ -278,4 +339,15 @@ Outputs:
     Value: !GetAtt CloudformationDeploymentRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-CloudformationDeploymentRole"
+  EdgeLambdaRole:
+    Description: ARN of the role for basic edge lambda invocations
+    Value: !GetAtt EdgeLambdaExecutionRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-EdgeLambdaExecutionRole"
+  CloudformationCustomResourcesRole:
+    Description: ARN of the role for cloudformation customization
+    Value: !GetAtt CloudformationCustomResourcesRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-CloudformationCustomResourcesRole"
+
 
