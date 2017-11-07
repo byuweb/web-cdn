@@ -36,7 +36,7 @@ const constants = require('./src/constants');
 
 
 module.exports = async function cdnAssembler(config, targetBucket, opts) {
-    let { workDir, githubCredentials, dryRun, env } = (opts || {});
+    let { workDir, githubCredentials, dryRun, env, forceBuild } = (opts || {});
 
     await setupGithubCredentials(githubCredentials, env);
 
@@ -58,7 +58,7 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     let newManifest = await assembleManifest(config);
 
     log.info("----- Planning Actions -----");
-    let actions = planActions(oldManifest, newManifest);
+    let actions = planActions(oldManifest, newManifest, forceBuild);
 
     if (!hasPlannedActions(actions)) {
         log.info("No planned actions. Exiting.");

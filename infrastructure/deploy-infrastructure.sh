@@ -40,7 +40,6 @@ if ! aws s3api head-bucket --bucket $staging_bucket_va; then
 fi
 
 cd $here/custom-resources/copy-lambda && yarn || exit 1
-cd $here/custom-resources/configure-cloudfront && yarn || exit 1
 cd $working
 
 aws cloudformation validate-template \

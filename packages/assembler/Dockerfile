@@ -16,7 +16,7 @@ RUN yarn install --production \
 
 ADD . ./
 
-RUN yarn link
+RUN chmod a+x bin/cdn-assembler.js && yarn link
 
 RUN mkdir -p /usr/src/app
 

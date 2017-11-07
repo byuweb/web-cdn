@@ -69,6 +69,7 @@ const args = require('yargs')
     .boolean('verbose')
     .default('work-dir', '.tmp')
     .boolean('dry-run')
+    .boolean('force-build')
     .demandOption(['config', 'bucket', 'cdn-host'], 'You must specify all of: config, bucket, and cdn-host')
     .env("CDN")
     .help()
@@ -102,7 +103,8 @@ async function runAssembler(args) {
         workDir: args.workDir,
         githubCredentials: await loadGithubCredentials(args),
         env: args.env,
-        cdnHost: args.cdnHost
+        cdnHost: args.cdnHost,
+        forceBuild: args.forceBuild
     })
 }
 

@@ -96,7 +96,11 @@ function chunkArray(array, chunkSize) {
 }
 
 function prefixFor(libId, version) {
-   return version.type === 'branch' ? `${libId}/experimental/${version.name}/` : `${libId}/${version.name}/`;
+    return `${libId}/${versionPath(version)}/`;
+}
+
+function versionPath(version) {
+    return version.type === 'branch' ? `experimental/${version.name}` : version.name;
 }
 
 function prepareLibSync(libId, lib, actions, assembledDir) {
@@ -171,7 +175,8 @@ async function uploadMetadataFiles(bucket, manifest, cdnHost, dryRun) {
     let aliases = extractAliases(manifest, cdnHost);
     if (dryRun) {
         log.info('skipping (dry run).');
-        log.debug('Would have written:\n.cdn-meta/aliases.json', aliases);
+        log.debug('Would have written:\n.cdn-meta/aliases.json', JSON.stringify(aliases));
+        log.debug('Would have written:\n.cdn-meta/hostname', cdnHost);
         return;
     }
     await s3Client.putObject({
@@ -195,8 +200,14 @@ async function uploadMetadataFiles(bucket, manifest, cdnHost, dryRun) {
 
 function extractAliases(manifest) {
     return Object.entries(manifest.libraries).reduce((result, [libId, lib]) => {
+        result[libId] = Object.entries(lib.aliases).reduce((acc, [alias, versionName]) => {
 
-        result[libId] = lib.aliases;
+            let version = lib.versions.find(it => it.name === versionName);
+
+            acc[alias] = versionPath(version);
+
+            return acc;
+        }, {});
 
         return result;
     }, {});

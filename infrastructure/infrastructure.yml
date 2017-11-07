@@ -131,7 +131,10 @@ Resources:
         Type: no_artifacts
       Source:
         Type: GITHUB
-        Location: https://github.com/byuweb/web-cdn.git
+        Location:
+          Fn::Sub:
+            - "https://github.com/${Repo}.git"
+            - Repo: !FindInMap [ GithubConfig, !Ref Environment, repo ]
         Auth:
           Type: OAUTH
         BuildSpec: buildspec-assembler.yml
@@ -264,13 +267,19 @@ Resources:
           DefaultTTL: !FindInMap [ CacheTTL, !Ref Environment, default ]
           MaxTTL: !FindInMap [ CacheTTL, !Ref Environment, max ]
           MinTTL: !FindInMap [ CacheTTL, !Ref Environment, min ]
+          LambdaFunctionAssociations:
+          - EventType: origin-request
+            LambdaFunctionARN: !GetAtt AliasResolverEdge.VersionArn
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
+        IPV6Enabled: true
         Origins:
         - Id: only-origin
-          DomainName: !GetAtt ContentBucket.DomainName
-          S3OriginConfig:
-            OriginAccessIdentity: ''
+          DomainName: !Select [ 1, !Split [ "://", !GetAtt ContentBucket.WebsiteURL ] ]
+          CustomOriginConfig:
+            HTTPPort: 80
+            HTTPSPort: 443
+            OriginProtocolPolicy: http-only
 
   WebsiteDNS:
     Type: AWS::Route53::RecordSetGroup
@@ -341,19 +350,6 @@ Resources:
       ServiceToken: !GetAtt CopyLambdaToVirginia.Arn
       LambdaFunctionName: !Ref AliasResolverFunc
       Nonce: !Ref Nonce
-
-  ConfigureCloudfrontMissingProperties:
-    # This will take the current alias resolver and push it to us-east-1
-    #  and push a new version to us-east-1.
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./custom-resources/configure-cloudfront/
-      Handler: index.handler
-      Runtime: nodejs6.10
-      MemorySize: 128
-      Timeout: 60
-      Role:
-        Fn::ImportValue: !Sub "${RolesStackName}-CloudformationCustomResourcesRole"
 
 Outputs:
   EdgeLambdaArn:

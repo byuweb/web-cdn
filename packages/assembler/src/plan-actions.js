@@ -19,13 +19,13 @@
 const sets = require('./util/sets');
 const log = require('winston');
 
-module.exports = function diffManifest(oldManifest, newManifest) {
+module.exports = function diffManifest(oldManifest, newManifest, forceBuild) {
     let allLibs = new Set([].concat(
         Object.keys(oldManifest.libraries),
         Object.keys(newManifest.libraries)
     ));
 
-    let forceUpdate = shouldForceUpdate(oldManifest, newManifest);
+    let forceUpdate = forceBuild || manifestVersionChanged(oldManifest, newManifest);
     if (forceUpdate) {
         log.info('Forcing update to all versions');
     }
@@ -95,7 +95,7 @@ function verNameIs(id) {
     }
 }
 
-function shouldForceUpdate(oldManifest, newManifest) {
+function manifestVersionChanged(oldManifest, newManifest) {
     return oldManifest['$cdn-version'] !== newManifest['$cdn-version'];
 }
 
