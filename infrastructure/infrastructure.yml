@@ -46,9 +46,9 @@ Mappings:
       branch: master
     stg:
       repo: byuweb/web-cdn
-      branch: aws-codebuild
+      branch: beta
     dev:
-      repo: ThatJoeMoore/web-cdn
+      repo: byuweb/web-cdn
       branch: beta
   CacheTTL:
     prod:

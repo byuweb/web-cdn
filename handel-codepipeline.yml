@@ -8,7 +8,7 @@ pipelines:
     phases:
       - type: github
         name: GitHub
-        owner: ThatJoeMoore
+        owner: byuweb
         repo: web-cdn
         branch: beta
       - type: codebuild
@@ -19,13 +19,13 @@ pipelines:
         build_role: web-community-cdn-cfn-deploy
       - type: slack_notify
         name: Notify
-        message: "(forked) Beta CDN Assembler Build Finished"
+        message: "Beta CDN Assembler Build Finished"
         channel: "@josephmoore"
   dev:
     phases:
       - type: github
         name: GitHub
-        owner: ThatJoeMoore
+        owner: byuweb
         repo: web-cdn
         branch: beta
       - type: codebuild
@@ -36,6 +36,6 @@ pipelines:
         build_role: web-community-cdn-cfn-deploy
       - type: slack_notify
         name: Notify
-        message: "(forked) Dev CDN Assembler Build Finished"
+        message: "Dev CDN Assembler Build Finished"
         channel: "@josephmoore"
 
