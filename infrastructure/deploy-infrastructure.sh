@@ -7,6 +7,7 @@ if [ ! -n "$env" ]; then
   exit 1
 fi
 dns_stack=web-community-cdn-dns-$env
+roles_stack=web-community-cdn-roles
 
 if [ "$env" = "prod" ]; then
   dns_stack=WebCommunityCDN-dns
@@ -61,6 +62,7 @@ if aws cloudformation deploy \
       Environment=$env \
       DnsStackName=$dns_stack \
       Nonce=$nonce \
+      RolesStackName=$roles_stack \
       ApplyDns=true 2>/tmp/cfn-error.txt; then
   echo "Deployment Finished"
   rm $packaged
@@ -69,4 +71,5 @@ elif grep "The submitted information didn't contain changes" /tmp/cfn-error.txt;
 else
   echo "Error running cloudformation:"
   cat /tmp/cfn-error.txt
+  exit 2
 fi
