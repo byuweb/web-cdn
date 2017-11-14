@@ -10,6 +10,8 @@ dns_stack=web-community-cdn-dns-$env
 
 if [ "$env" = "prod" ]; then
   dns_stack=WebCommunityCDN-dns
+  echo 'prod deployment not yet supported'
+  exit 0
 fi
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
