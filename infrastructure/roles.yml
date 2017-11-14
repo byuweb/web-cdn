@@ -122,16 +122,6 @@ Resources:
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       Policies:
-        - PolicyName: "AllowCloudfrontManipulation"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'cloudfront:*'
-                  - 'iam:CreateServiceLinkedRole'
-                Resource:
-                  - '*'
         - PolicyName: "AllowLambdaManipulation"
           PolicyDocument:
             Version: "2012-10-17"
