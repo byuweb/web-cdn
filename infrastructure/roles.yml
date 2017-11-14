@@ -186,11 +186,6 @@ Resources:
                 - codebuild.amazonaws.com
             Action:
               - 'sts:AssumeRole'
-          - Effect: Allow
-            Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/AccountAdministrator"
-            Action:
-              - 'sts:AssumeRole'
       Policies:
         - PolicyName: AllowCloudWatchLogs
           PolicyDocument:
