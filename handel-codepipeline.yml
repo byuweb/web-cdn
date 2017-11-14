@@ -4,6 +4,23 @@ version: 1
 name: web-community-cdn
 
 pipelines:
+  prod:
+    phases:
+      - type: github
+        name: GitHub
+        owner: byuweb
+        repo: web-cdn
+        branch: master
+      - type: codebuild
+        name: Build
+        build_image: aws/codebuild/docker:1.12.1
+        environment_variables:
+          ENV: prod
+        build_role: web-community-cdn-cfn-deploy
+      - type: slack_notify
+        name: Notify
+        message: "Prod CDN Assembler Build Finished"
+        channel: "@josephmoore"
   beta:
     phases:
       - type: github
