@@ -301,7 +301,7 @@ Resources:
                 Action:
                   - 'iam:PassRole'
                 Resource:
-                  - "arn:aws:iam::*:role/web-community-cdn/cfn-deploy"
+                  - "arn:aws:iam::*:role/web-community-cdn/web-community-cdn-cfn-deploy"
 
 
 Outputs:
