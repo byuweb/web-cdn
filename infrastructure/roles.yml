@@ -43,7 +43,7 @@ Resources:
                 - "codebuild.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-      Path: "/"
+      Path: "/web-community-cdn/"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/CloudFrontReadOnlyAccess"
         - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
@@ -76,7 +76,7 @@ Resources:
                 - "lambda.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-      Path: "/"
+      Path: "/web-community-cdn/"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       Policies:
