@@ -28,6 +28,8 @@ exports.handler = function handler(event, context, callback) {
 
     let physicalId = event.PhysicalResourceId;
 
+    console.log('physicalId:', physicalId);
+
     let functionName = event.ResourceProperties.LambdaFunctionName;
     let nonce = event.ResourceProperties.Nonce;
 
@@ -151,7 +153,7 @@ exports.handler = function handler(event, context, callback) {
                 newConfig.Publish = true;
                 return lambdaEast.createFunction(newConfig).promise()
                     .then(cfg => {
-                        console.log('Created new function');
+                        console.log('Created new function', cfg);
                         return {
                             publish: false, //We're publishing as part of the create
                             config: cfg,
