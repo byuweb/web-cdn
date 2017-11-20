@@ -351,12 +351,3 @@ Resources:
       LambdaFunctionName: !Ref AliasResolverFunc
       Nonce: !Ref Nonce
 
-#Outputs:
-#  EdgeLambdaArn:
-#    Value: !Ref AliasResolverEdge
-#  EdgeLambdaName:
-#    Value: !GetAtt AliasResolverEdge.FunctionName
-#  EdgeVersion:
-#    Value: !GetAtt AliasResolverEdge.Version
-#  EdgeVersionArn:
-#    Value: !GetAtt AliasResolverEdge.VersionArn

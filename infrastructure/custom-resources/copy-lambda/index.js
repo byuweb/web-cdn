@@ -184,13 +184,13 @@ exports.handler = function handler(event, context, callback) {
                     .then(zip => {
                         return lambdaEast.updateFunctionCode({
                             FunctionName: newConfig.FunctionName,
-                            Publish: true,
+                            Publish: false,
                             ZipFile: zip
                         }).promise();
                     }).then(cfg => {
                         console.log('Updated function code');
                         return {
-                            publish: false, //We're publishing as part of the code update
+                            publish: true,
                             config: cfg,
                             id: physicalId
                         }
