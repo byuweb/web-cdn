@@ -344,12 +344,12 @@ Resources:
       Role:
         Fn::ImportValue: !Sub "${RolesStackName}-CloudformationCustomResourcesRole"
 
-#  AliasResolverEdge:
-#    Type: Custom::CopyLambdaToVirginia
-#    Properties:
-#      ServiceToken: !GetAtt CopyLambdaToVirginia.Arn
-#      LambdaFunctionName: !Ref AliasResolverFunc
-#      Nonce: !Ref Nonce
+  AliasResolverEdge:
+    Type: Custom::CopyLambdaToVirginia
+    Properties:
+      ServiceToken: !GetAtt CopyLambdaToVirginia.Arn
+      LambdaFunctionName: !Ref AliasResolverFunc
+      Nonce: !Ref Nonce
 
 #Outputs:
 #  EdgeLambdaArn:
