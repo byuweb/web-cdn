@@ -59,10 +59,12 @@ exports.handler = function handler(event, context, callback) {
         console.log('Deleting');
         return lambdaEast.deleteFunction({FunctionName: physicalId}).promise()
             .catch(err => {
-                if (err.name === 'ResourceNotFoundException') {
-                    return null;
-                }
-                throw err;
+                console.log('Error while deleting lambda, ignoring', err);
+                return {
+                    id: physicalId,
+                    attributes: {},
+                    message: `Error while deleting lambda: ${err.name}; you may need to manually delete the copied lambda.`
+                };
             }).then(() => {
                 return {
                     id: physicalId,
