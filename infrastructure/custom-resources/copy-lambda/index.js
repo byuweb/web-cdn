@@ -110,17 +110,22 @@ exports.handler = function handler(event, context, callback) {
             }
 
             return versionPromise.then(version => {
+                let arn = cleanFunctionArn(updateResult.id);
                 return {
-                    id: updateResult.id,
+                    id: arn,
                     attributes: {
                         FunctionName: newConfig.FunctionName,
-                        FunctionArn: updateResult.id,
+                        FunctionArn: arn,
                         Version: version,
-                        VersionArn: updateResult.id + ':' + version
+                        VersionArn: arn + ':' + version
                     }
                 };
             })
         });
+    }
+
+    function cleanFunctionArn(arn) {
+        return arn.replace(/:(\d+|\$LATEST)$/, ''); //strip off version number
     }
 
     function copyConfig(srcCfg) {
@@ -174,7 +179,7 @@ exports.handler = function handler(event, context, callback) {
                     return {
                         publish: configIsDifferent(source, target),
                         config: result,
-                        id: physicalId
+                        id: result.FunctionArn
                     };
                 }
 
@@ -184,15 +189,15 @@ exports.handler = function handler(event, context, callback) {
                     .then(zip => {
                         return lambdaEast.updateFunctionCode({
                             FunctionName: newConfig.FunctionName,
-                            Publish: false,
+                            Publish: true,
                             ZipFile: zip
                         }).promise();
                     }).then(cfg => {
                         console.log('Updated function code');
                         return {
-                            publish: true,
+                            publish: false, //already published
                             config: cfg,
-                            id: physicalId
+                            id: cfg.FunctionArn
                         }
                     });
             });
