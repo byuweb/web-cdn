@@ -76,8 +76,17 @@ else
   exit 2
 fi
 
-buildproj=`sed -e 's/^"//' -e 's/"$//' <<< $(aws cloudformation describe-stack-resource --stack-name ${stackname} --logical-resource-id CdnBuildProject --query StackResourceDetail.PhysicalResourceId)`
+function getOutput() {
+  local stack=$1
+  local key=$2
 
-echo "Running Assembler Build Project $buildproj"
+  local temp=`aws cloudformation describe-stacks --stack-name "$stack" --query "Stacks[0].Outputs[?OutputKey=='$key'].OutputValue | [0]"`
+  sed -e 's/^"//' -e 's/"$//' <<< "$temp"
+}
 
-aws codebuild start-build
+buildbranch=`getOutput ${stackname} BuildBranch`
+buildproj=`getOutput ${stackname} BuildProject`
+
+echo "Running Assembler Build Project $buildproj@$buildbranch"
+
+aws codebuild start-build --project-name ${buildproj} --source-version ${buildbranch}
