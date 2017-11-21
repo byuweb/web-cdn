@@ -40,7 +40,7 @@ exports.handler = (event, context, callback) => {
         let aliasName = match[2];
 
         console.log(`Appears to be an alias: ${libId}@${aliasName}; getting alias config`);
-        let host = request.headers.host[0].value;
+        let host = resolveHostName(request.headers.host[0].value);
 
         let aliasConfigUrl = `https://${host}/.cdn-meta/aliases.json`;
 
@@ -92,6 +92,16 @@ exports.handler = (event, context, callback) => {
         });
     }
 };
+
+const S3_WEBSITE_HOST = 's3-website-us-west-2.amazonaws.com';
+const S3_SECURE_HOST = 's3.dualstack.us-west-2.amazonaws.com';
+
+function resolveHostName(host) {
+    if (host.includes(S3_WEBSITE_HOST)) {
+        return host.replace(S3_WEBSITE_HOST, S3_SECURE_HOST);
+    }
+    return host;
+}
 
 function getAliasList(host) {
     let aliasConfigUrl = `https://${host}/.cdn-meta/aliases.json`;

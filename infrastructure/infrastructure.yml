@@ -125,7 +125,7 @@ Resources:
   CdnBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub "web-community-cdn-${Environment}-assembler-test"
+      Name: !Sub "web-community-cdn-${Environment}-assembler"
       Description: Assembles, builds, and deploys the contents of the BYU Web Community CDN
       Artifacts:
         Type: no_artifacts

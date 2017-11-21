@@ -55,9 +55,11 @@ aws cloudformation package \
     --s3-bucket $staging_bucket_or \
     --output-template-file $packaged
 
+stackname=web-community-cdn-$env
+
 if aws cloudformation deploy \
     --template-file $packaged \
-    --stack-name web-community-cdn-$env \
+    --stack-name $stackname \
     --parameter-overrides \
       Environment=$env \
       DnsStackName=$dns_stack \
@@ -73,3 +75,9 @@ else
   cat /tmp/cfn-error.txt
   exit 2
 fi
+
+buildproj=`sed -e 's/^"//' -e 's/"$//' <<< $(aws cloudformation describe-stack-resource --stack-name ${stackname} --logical-resource-id CdnBuildProject --query StackResourceDetail.PhysicalResourceId)`
+
+echo "Running Assembler Build Project $buildproj"
+
+aws codebuild start-build
