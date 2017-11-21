@@ -351,3 +351,12 @@ Resources:
       LambdaFunctionName: !Ref AliasResolverFunc
       Nonce: !Ref Nonce
 
+Outputs:
+  ContentBucket:
+    Value: !Ref ContentBucket
+  BuildProject:
+    Value: !Ref CdnBuildProject
+  BuildBranch:
+    Value: !FindInMap [ GithubConfig, !Ref Environment, branch ]
+  Cloudfront:
+    Value: !Ref WebsiteCloudfront
