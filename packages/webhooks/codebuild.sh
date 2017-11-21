@@ -4,4 +4,4 @@ echo "=========== Building webhooks ==========="
 
 set -e
 
-echo "TODO: Setup build script for webhooks"
+echo "No build required for webhooks package."
