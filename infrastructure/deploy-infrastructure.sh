@@ -15,6 +15,14 @@ if [ "$env" = "prod" ]; then
   exit 0
 fi
 
+getStackOutput() {
+  local stack=$1
+  local key=$2
+
+  local temp=`aws cloudformation describe-stacks --stack-name "$stack" --query "Stacks[0].Outputs[?OutputKey=='$key'].OutputValue | [0]"`
+  echo "$temp" | sed -e 's/^"//' -e 's/"$//'
+}
+
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 working=$(pwd)
 
@@ -76,16 +84,8 @@ else
   exit 2
 fi
 
-function getOutput() {
-  local stack=$1
-  local key=$2
-
-  local temp=`aws cloudformation describe-stacks --stack-name "$stack" --query "Stacks[0].Outputs[?OutputKey=='$key'].OutputValue | [0]"`
-  sed -e 's/^"//' -e 's/"$//' <<< "$temp"
-}
-
-buildbranch=`getOutput ${stackname} BuildBranch`
-buildproj=`getOutput ${stackname} BuildProject`
+buildbranch=`getStackOutput ${stackname} BuildBranch`
+buildproj=`getStackOutput ${stackname} BuildProject`
 
 echo "Running Assembler Build Project $buildproj@$buildbranch"
 
