@@ -267,9 +267,9 @@ Resources:
           DefaultTTL: !FindInMap [ CacheTTL, !Ref Environment, default ]
           MaxTTL: !FindInMap [ CacheTTL, !Ref Environment, max ]
           MinTTL: !FindInMap [ CacheTTL, !Ref Environment, min ]
-#          LambdaFunctionAssociations:
-#          - EventType: origin-request
-#            LambdaFunctionARN: !GetAtt AliasResolverEdge.VersionArn
+          LambdaFunctionAssociations:
+          - EventType: origin-request
+            LambdaFunctionARN: !GetAtt AliasResolverEdge.VersionArn
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
         IPV6Enabled: true
