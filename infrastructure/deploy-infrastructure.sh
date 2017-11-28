@@ -31,7 +31,6 @@ nonce=$(date +"%s")
 packaged=/tmp/web-community-packaged-infrastructure-$nonce.yml
 
 staging_bucket_or=byu-web-community-cdn-infra-staging-$env-us-west-2
-staging_bucket_va=byu-web-community-cdn-infra-staging-$env-us-east-1
 
 if ! aws s3api head-bucket --bucket $staging_bucket_or; then
   echo "Bucket $staging_bucket_or does not exist; creating"
@@ -40,14 +39,6 @@ if ! aws s3api head-bucket --bucket $staging_bucket_or; then
     --acl private \
     --region us-west-2 \
     --create-bucket-configuration LocationConstraint=us-west-2
-fi
-
-if ! aws s3api head-bucket --bucket $staging_bucket_va; then
-  echo "Bucket $staging_bucket_va does not exist; creating"
-  aws s3api create-bucket \
-    --bucket $staging_bucket_va \
-    --acl private \
-    --region us-east-1
 fi
 
 cd $here/custom-resources/copy-lambda && yarn || exit 1
