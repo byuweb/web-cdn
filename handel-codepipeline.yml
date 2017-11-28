@@ -44,7 +44,7 @@ pipelines:
         name: GitHub
         owner: byuweb
         repo: web-cdn
-        branch: beta
+        branch: dev
       - type: codebuild
         name: Build
         build_image: aws/codebuild/docker:1.12.1

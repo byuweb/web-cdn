@@ -268,8 +268,8 @@ Resources:
           MaxTTL: !FindInMap [ CacheTTL, !Ref Environment, max ]
           MinTTL: !FindInMap [ CacheTTL, !Ref Environment, min ]
           LambdaFunctionAssociations:
-          - EventType: origin-request
-            LambdaFunctionARN: !GetAtt AliasResolverEdge.VersionArn
+          - EventType: origin-response
+            LambdaFunctionARN: !GetAtt FixRedirectsFuncEdge.VersionArn
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
         IPV6Enabled: true
@@ -305,13 +305,13 @@ Resources:
             HostedZoneId: Z2FDTNDATAQYW2
             DNSName: !GetAtt WebsiteCloudfront.DomainName
 
-  AliasResolverFunc:
+  FixRedirectsFunc:
     # This isn't actually the exact function that'll get invoked by lambda@edge. Our custom resource will copy it
     #  and push a new version to us-east-1 and lambda@edge.
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "web-community-cdn-alias-resolver-${Environment}"
-      CodeUri: ./../packages/alias-resolver-lambda/
+      FunctionName: !Sub "web-community-cdn-fix-redirects-${Environment}"
+      CodeUri: ./../packages/fix-redirects-lambda/
       Handler: index.handler
       Runtime: nodejs6.10
       MemorySize: 128
@@ -331,6 +331,7 @@ Resources:
       - Key: app
         Value: Web Community CDN
 
+
   CopyLambdaToVirginia:
     # This will take the current alias resolver and push it to us-east-1
     #  and push a new version to us-east-1.
@@ -344,11 +345,11 @@ Resources:
       Role:
         Fn::ImportValue: !Sub "${RolesStackName}-CloudformationCustomResourcesRole"
 
-  AliasResolverEdge:
+  FixRedirectsFuncEdge:
     Type: Custom::CopyLambdaToVirginia
     Properties:
       ServiceToken: !GetAtt CopyLambdaToVirginia.Arn
-      LambdaFunctionName: !Ref AliasResolverFunc
+      LambdaFunctionName: !Ref FixRedirectsFunc
       Nonce: !Ref Nonce
 
 Outputs:
