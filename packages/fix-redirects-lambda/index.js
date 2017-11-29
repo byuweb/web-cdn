@@ -20,12 +20,12 @@ exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
     const response = event.Records[0].cf.response;
 
-    if (response.status === 301) {
-        response.status = 302;
-        response.headers['cache-control'] = {
+    if (response.status === '301') {
+        response.status = '302';
+        response.headers['cache-control'] = [{
             key: 'Cache-Control',
             value: 'public, max-age=300, s-maxage=300',
-        };
+        }];
         response.statusDescription = "Moved Temporarily";
     }
 
