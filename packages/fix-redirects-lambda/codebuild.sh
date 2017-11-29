@@ -1,7 +1,7 @@
 #!/bin/sh
 
-echo "=========== Building alias-resolver-lambda ==========="
+echo "=========== Building fix-redirects-lambda ==========="
 
 set -e
 
-echo "No build required for alias-resolver-lambda"
+echo "No build required for fix-redirects-lambda"

@@ -29,5 +29,7 @@ exports.handler = (event, context, callback) => {
         response.statusDescription = "Moved Temporarily";
     }
 
+    console.log('Returning response', JSON.stringify(response, null, 2));
+
     callback(null, response);
 };
