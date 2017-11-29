@@ -35,12 +35,15 @@ const runCommand = require('./util/run-command');
 const sets = require('./util/sets');
 const path = require('path');
 
+const klaw = require('klaw-promise');
+
 const log = require('winston');
 
 module.exports = async function uploadFiles(oldManifest, newManifest, actions, bucket, assembledDir, cdnHost, dryRun) {
     let sync = [];
     let invalidate = ['manifest.json'];
     let remove = [];
+    let redirects = [];
 
     Object.entries(actions).forEach(([libId, libActions]) => {
         let libDefn = newManifest.libraries[libId] || oldManifest.libraries[libId];
@@ -50,6 +53,7 @@ module.exports = async function uploadFiles(oldManifest, newManifest, actions, b
         sync.push(...syncActions.sync);
         invalidate.push(...syncActions.invalidate);
         remove.push(...syncActions.remove);
+        redirects.push(...syncActions.redirect);
     });
 
     log.info('Starting Sync jobs:\n\t' + sync.map(each => each.to).join('\n\t'));
@@ -63,9 +67,9 @@ module.exports = async function uploadFiles(oldManifest, newManifest, actions, b
         return deleteDir(bucket, each, dryRun);
     });
 
-    // log.info('Updating alias RedirectRules');
+    log.info('Updating Redirects');
     // let redirects = computeRedirects(newManifest);
-    // await updateRedirects(bucket, redirects, cdnHost, dryRun);
+    await updateRedirects(bucket, redirects, cdnHost, assembledDir, dryRun);
 
     log.info('Updating Manifest');
     await uploadManifest(bucket, newManifest, dryRun);
@@ -108,6 +112,7 @@ function prepareLibSync(libId, lib, actions, assembledDir) {
         sync: [],
         invalidate: [],
         remove: [],
+        redirect: [],
     };
     if (actions.deleteLib) {
         syncActions.remove.push(libId + '/');
@@ -139,7 +144,12 @@ function prepareLibSync(libId, lib, actions, assembledDir) {
         if (aliases) {
             aliases.forEach(alias => {
                 let aliasPrefix = `${libId}/${alias}/`;
-                syncActions.invalidate.push(aliasPrefix + "*")
+                syncActions.invalidate.push(aliasPrefix + "*");
+                syncActions.redirect.push({
+                    from: aliasPrefix,
+                    to: prefix,
+                    dir: assembled
+                });
             });
         }
     });
@@ -151,6 +161,11 @@ function prepareLibSync(libId, lib, actions, assembledDir) {
     }
 
     return syncActions;
+}
+
+async function listFiles(dir) {
+    const files = await klaw(dir);
+    return files.filter(it => it.stats.isFile()).map(it => it.path);
 }
 
 async function uploadManifest(bucket, manifest, dryRun) {
@@ -248,34 +263,35 @@ async function deleteDir(bucket, prefix, dryRun) {
     });
 }
 
-async function updateRedirects(bucket, redirects, cdnHost, dryRun) {
-    let routingRules = redirects.map(it => {
-        return {
-            Condition: {
-                KeyPrefixEquals: it.from
-            },
-            Redirect: {
-                Protocol: 'https',
-                HostName: cdnHost,
-                ReplaceKeyPrefixWith: it.to,
-                HttpRedirectCode: "302"
-            },
-        };
-    });
+async function updateRedirects(bucket, redirects, cdnHost, assembledDir, dryRun) {
+    const files = [];
+
+    for (let redirect of redirects) {
+        const targetFiles = await listFiles(redirect.dir);
+        for (const file of targetFiles) {
+            const relative = path.relative(redirect.dir, file).replace(/\\/g, '/');
+            files.push({
+                Bucket: bucket,
+                Key: redirect.from + relative,
+                ACL: 'public-read',
+                Body: '',
+                CacheControl: 'public, max-age=300, s-maxage=300',
+                Metadata: {
+                    'byu-test': 'test'
+                },
+                WebsiteRedirectLocation: `https://${cdnHost}/${redirect.to}${relative}`
+            });
+        }
+    }
 
     if (dryRun) {
-        log.info('skipping (dry run). Would set up routing rules:\n' + JSON.stringify(routingRules, null, 2));
+        log.info('skipping (dry run). Would set up redirects:\n' + JSON.stringify(redirects, null, 2));
         return;
     }
-    log.info('Configuring Routing Rules:\n' + JSON.stringify(routingRules, null, 2));
-    let config = await s3Client.getBucketWebsite({Bucket: bucket}).promise();
-
-    config.RoutingRules = routingRules;
-
-    return s3Client.putBucketWebsite({
-        Bucket: bucket,
-        WebsiteConfiguration: config
-    }).promise();
+    await batch(files, UPLOAD_PARALLELISM, async (file) => {
+        log.debug(`Uploading redirect from ${file.Key} to ${file.WebsiteRedirectLocation}`);
+        await s3Client.putObject(file).promise();
+    });
 }
 
 function metadataFor(libId, version) {
@@ -292,26 +308,6 @@ function cacheControlFor(libId, version) {
     } else {
         return 'public, max-age=300, s-maxage=300';
     }
-}
-
-function computeRedirects(manifest) {
-   return Object.entries(manifest.libraries).reduce((redirects, [libId, lib]) => {
-       let aliasByVersion = invertMap(lib.aliases);
-       let libRedirects = lib.versions.filter(it => !!aliasByVersion[it.name])
-           .map(version => {
-               let versionPrefix = prefixFor(libId, version);
-               let versionAliases = aliasByVersion[version.name];
-               return versionAliases.map(alias => {
-                   return {
-                       from: `${libId}/${alias}/`,
-                       to: versionPrefix,
-                   }
-               });
-           }).reduce((array, each) => {
-            return array.concat(each);
-           }, []);
-       return libRedirects.concat(redirects);
-   }, []);
 }
 
 function invertMap(object) {
