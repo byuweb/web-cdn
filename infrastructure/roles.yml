@@ -85,8 +85,8 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: "Allow"
-                Action: "codepipeline:StartPipelineExecution"
-                Resource: !Sub "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:web-community-cdn-*-assembler-pipeline"
+                Action: "codebuild:StartBuild"
+                Resource: !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/web-community-cdn-*-assembler"
   EdgeLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
