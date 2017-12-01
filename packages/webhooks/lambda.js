@@ -23,13 +23,13 @@ const webhooks = require('./webhooks');
 
 const MAIN_CONFIG_REPO_ENV = 'CDN_MAIN_CONFIG_REPO';
 const MAIN_CONFIG_BRANCH_ENV = 'CDN_MAIN_CONFIG_BRANCH';
-const CODE_PIPELINE_NAME_ENV = 'CDN_ASSEMBLER_PIPELINE_NAME';
+const CDN_BUILDER_NAME_ENV = 'CDN_BUILDER_NAME';
 const SKIP_CALLER_VALIDATION_ENV = 'CDN_SKIP_CALLER_VALIDATION';
 
 const options = {
     mainConfigRepo: process.env[MAIN_CONFIG_REPO_ENV],
     mainConfigBranch: process.env[MAIN_CONFIG_BRANCH_ENV],
-    assemblerPipelineName: requireEnv(CODE_PIPELINE_NAME_ENV),
+    assemblerCodebuildName: requireEnv(CDN_BUILDER_NAME_ENV),
     skipCallerValidation: process.env[SKIP_CALLER_VALIDATION_ENV] === 'true',
 };
 

@@ -18,17 +18,17 @@
 "use strict";
 
 const AWS = require('aws-sdk');
-const CodePipeline = new AWS.CodePipeline();
+const CodeBuild = new AWS.CodeBuild();
 const HttpError = require('./http-error');
 
-module.exports = function startPipeline(name) {
-    console.log(`Starting pipeline ${name}`);
-    return CodePipeline.startPipelineExecution({
-        name: name
+module.exports = function startAssembler(name) {
+    console.log(`Starting Assembler Codebuild Project ${name}`);
+    return CodeBuild.startBuild({
+        projectName: name
     }).promise()
         .catch(err => {
-            console.error('got codepipline error', err);
-            throw new HttpError(500, 'Unable to start pipeline: ' + err.message);
+            console.error('got codebuild error', err);
+            throw new HttpError(500, 'Unable to start codebuild: ' + err.message);
         })
         .then(data => data.pipelineExecutionId);
 };

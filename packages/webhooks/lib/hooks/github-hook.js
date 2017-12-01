@@ -23,7 +23,7 @@
 const ipaddr = require('ipaddr.js');
 
 const HttpError = require('../http-error');
-const startPipeline = require('../start-pipeline');
+const startAssembler = require('../start-assembler');
 
 const req = require('request-promise-native').defaults(require('../req-defaults'));
 
@@ -75,9 +75,9 @@ function handleEvent(event, eventType, callerIp, mainConfig, options) {
                 throw new HttpError(400, `Repository ${repoName} is not in CDN config`);
             }
 
-            return startPipeline(options.assemblerPipelineName)
+            return startAssembler(options.assemblerCodebuildName)
                 .then(executionId => {
-                    console.log('Started pipeline with execution ID', executionId);
+                    console.log('Started Codebuild Run with execution ID', executionId);
                     return {running: true, executionId: executionId};
                 });
         });
