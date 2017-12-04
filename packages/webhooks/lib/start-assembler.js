@@ -21,14 +21,15 @@ const AWS = require('aws-sdk');
 const CodeBuild = new AWS.CodeBuild();
 const HttpError = require('./http-error');
 
-module.exports = function startAssembler(name) {
-    console.log(`Starting Assembler Codebuild Project ${name}`);
+module.exports = function startAssembler(name, branch) {
+    console.log(`Starting Assembler Codebuild Project ${name}@${branch}`);
     return CodeBuild.startBuild({
-        projectName: name
+        projectName: name,
+        sourceVersion: branch
     }).promise()
         .catch(err => {
             console.error('got codebuild error', err);
             throw new HttpError(500, 'Unable to start codebuild: ' + err.message);
         })
-        .then(data => data.pipelineExecutionId);
+        .then(data => data.build.id);
 };

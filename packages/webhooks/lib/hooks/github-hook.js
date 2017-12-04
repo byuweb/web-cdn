@@ -75,7 +75,7 @@ function handleEvent(event, eventType, callerIp, mainConfig, options) {
                 throw new HttpError(400, `Repository ${repoName} is not in CDN config`);
             }
 
-            return startAssembler(options.assemblerCodebuildName)
+            return startAssembler(options.assemblerCodebuildName, options.mainConfigBranch)
                 .then(executionId => {
                     console.log('Started Codebuild Run with execution ID', executionId);
                     return {running: true, executionId: executionId};
