@@ -251,6 +251,7 @@ Resources:
                   - !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/*"
               - Effect: Allow
                 Action:
+                  - 'cloudformation:GetTemplateSummary'
                   - 'cloudformation:ValidateTemplate'
                 Resource:
                   - '*'
