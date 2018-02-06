@@ -13,7 +13,7 @@ pipelines:
         branch: master
       - type: codebuild
         name: Build
-        build_image: aws/codebuild/docker:1.12.1
+        build_image: aws/codebuild/docker:17.09.0
         environment_variables:
           ENV: prod
         build_role: web-community-cdn-cfn-deploy
@@ -30,7 +30,7 @@ pipelines:
         branch: beta
       - type: codebuild
         name: Build
-        build_image: aws/codebuild/docker:1.12.1
+        build_image: aws/codebuild/docker:17.09.0
         environment_variables:
           ENV: stg
         build_role: web-community-cdn-cfn-deploy
@@ -47,7 +47,7 @@ pipelines:
         branch: beta
       - type: codebuild
         name: Build
-        build_image: aws/codebuild/docker:1.12.1
+        build_image: aws/codebuild/docker:17.09.0
         environment_variables:
           ENV: dev
         build_role: web-community-cdn-cfn-deploy
