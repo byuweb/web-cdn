@@ -26,9 +26,12 @@ getStackOutput() {
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 working=$(pwd)
 
-nonce=$(date +"%s")
+now=$(date +"%s")
 
-packaged=/tmp/web-community-packaged-infrastructure-$nonce.yml
+echo "computing alias resolver shasum"
+alias_resolver_hash=`find packages/alias-resolver-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
+
+packaged=/tmp/web-community-packaged-infrastructure-$now.yml
 
 staging_bucket_or=byu-web-community-cdn-infra-staging-$env-us-west-2
 
@@ -68,7 +71,7 @@ if aws cloudformation deploy \
     --parameter-overrides \
       Environment=$env \
       DnsStackName=$dns_stack \
-      Nonce=$nonce \
+      AliasResolverFunctionHash=$alias_resolver_hash \
       RolesStackName=$roles_stack \
       ApplyDns=true 2>/tmp/cfn-error.txt; then
   echo "Deployment Finished"
