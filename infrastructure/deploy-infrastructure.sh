@@ -10,7 +10,7 @@ dns_stack=web-community-cdn-dns-$env
 roles_stack=web-community-cdn-roles
 
 if [ "$env" = "prod" ]; then
-  dns_stack=WebCommunityCDN-dns
+  dns_stack=WebCommunityCDN-DNS-Prod
   echo 'prod deployment not yet supported'
   exit 0
 fi
@@ -59,6 +59,12 @@ stackname=web-community-cdn-$env
 if aws cloudformation deploy \
     --template-file $packaged \
     --stack-name $stackname \
+    --tags \
+      app="Web Community CDN" \
+      team=OIT_APP_DEV__STUDENT_LIFE_APPS \
+      env=$env \
+      data-sensitivity=public \
+      if-questions-contact="Joseph Moore James Spiers Katria Lesser" \
     --parameter-overrides \
       Environment=$env \
       DnsStackName=$dns_stack \

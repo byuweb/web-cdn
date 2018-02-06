@@ -137,6 +137,9 @@ Resources:
                   - 'lambda:TagResource'
                   - 'lambda:UntagResource'
                   - 'lambda:ListTags'
+                  - 'cloudfront:TagResource'
+                  - 'cloudfront:UntagResource'
+                  - 'cloudfront:ListTagsForResource'
                 Resource:
                   - '*'
         - PolicyName: AllowPassRole
