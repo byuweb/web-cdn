@@ -64,7 +64,7 @@ if aws cloudformation deploy \
       team=OIT_APP_DEV__STUDENT_LIFE_APPS \
       env=$env \
       data-sensitivity=public \
-      if-questions-contact="Joseph Moore James Spiers Katria Lesser" \
+      if-questions-contact="Joseph Moore James Speirs Katria Lesser" \
     --parameter-overrides \
       Environment=$env \
       DnsStackName=$dns_stack \
