@@ -24,10 +24,10 @@ Parameters:
     AllowedValues:
       - true
       - false
-  Nonce:
+  AliasResolverFunctionHash:
     Type: String
-    Description: A unique nonce. Should change with each deployment. Used to make custom resources work.
-    Default: nonce
+    Description: Hash of the files in the Alias Resolver lambda. Used to make the lambda copier work.
+    Default: fakesha
 
 Mappings:
   Certs:
@@ -63,6 +63,16 @@ Mappings:
       default: 30
       max: 300
       min: 0
+  DNS:
+    prod:
+      webhooks: webhooks-next.cdn.byu.edu
+      cdn: next.cdn.byu.edu
+    stg:
+      webhooks: webhooks-beta.cdn.byu.edu
+      cdn: beta.cdn.byu.edu
+    dev:
+      webhooks: webhooks-dev.cdn.byu.edu
+      cdn: dev.cdn.byu.edu
 
 Conditions:
   FlatDns: !Or [ !Equals [ !Ref Environment, dev ], !Equals [ !Ref Environment, stg ] ]
@@ -149,9 +159,7 @@ Resources:
           - Name: BUILD_ENV
             Value: !Ref Environment
           - Name: CDN_HOST
-            Value:
-              Fn::ImportValue:
-                !Sub "${DnsStackName}-RootDnsName"
+            Value: !FindInMap [ DNS, !Ref Environment, cdn ]
       ServiceRole:
         Fn::ImportValue: !Sub "${RolesStackName}-BuilderRole"
       Tags:
@@ -171,9 +179,7 @@ Resources:
     Type: AWS::ApiGateway::DomainName
     Properties:
       CertificateArn: !FindInMap [ Certs, !Ref "AWS::AccountId", cdn ]
-      DomainName:
-        Fn::ImportValue:
-          !Sub "${DnsStackName}-WebhookDnsName"
+      DomainName: !FindInMap [ DNS, !Ref Environment, webhooks ]
 
   WebhookBasePath:
     DependsOn: [WebhookFunc]
@@ -228,16 +234,12 @@ Resources:
           !Sub "${DnsStackName}-WebhookDnsZoneId"
       Comment: DNS for CDN Webhooks
       RecordSets:
-        - Name:
-            Fn::ImportValue:
-              !Sub "${DnsStackName}-WebhookDnsName"
+        - Name: !FindInMap [ DNS, !Ref Environment, webhooks ]
           Type: A
           AliasTarget:
             HostedZoneId: Z2FDTNDATAQYW2
             DNSName: !GetAtt WebhookDomain.DistributionDomainName
-        - Name:
-            Fn::ImportValue:
-              !Sub "${DnsStackName}-WebhookDnsName"
+        - Name: !FindInMap [ DNS, !Ref Environment, webhooks ]
           Type: AAAA
           AliasTarget:
             HostedZoneId: Z2FDTNDATAQYW2
@@ -249,8 +251,7 @@ Resources:
       DistributionConfig:
         Comment: !Sub "${Environment} Web Community CDN"
         Aliases:
-         - Fn::ImportValue:
-             !Sub "${DnsStackName}-RootDnsName"
+         - !FindInMap [ DNS, !Ref Environment, cdn ]
         Enabled: 'true'
         HttpVersion: http2
         ViewerCertificate:
@@ -290,16 +291,12 @@ Resources:
           !Sub "${DnsStackName}-RootDnsZoneId"
       Comment: DNS for CDN
       RecordSets:
-        - Name:
-            Fn::ImportValue:
-              !Sub "${DnsStackName}-RootDnsName"
+        - Name: !FindInMap [ DNS, !Ref Environment, cdn ]
           Type: A
           AliasTarget:
             HostedZoneId: Z2FDTNDATAQYW2
             DNSName: !GetAtt WebsiteCloudfront.DomainName
-        - Name:
-            Fn::ImportValue:
-              !Sub "${DnsStackName}-RootDnsName"
+        - Name: !FindInMap [ DNS, !Ref Environment, cdn ]
           Type: AAAA
           AliasTarget:
             HostedZoneId: Z2FDTNDATAQYW2
@@ -349,8 +346,8 @@ Resources:
     Type: Custom::CopyLambdaToVirginia
     Properties:
       ServiceToken: !GetAtt CopyLambdaToVirginia.Arn
-      LambdaFunctionName: !Ref FixRedirectsFunc
-      Nonce: !Ref Nonce
+      LambdaFunctionName: !Ref AliasResolverFunc
+      Nonce: !Ref AliasResolverFunctionHash
 
 Outputs:
   ContentBucket:

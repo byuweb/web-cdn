@@ -69,6 +69,11 @@ Resources:
     DeletionPolicy: Retain
 
 Outputs:
+  DNSZone:
+    Description: Old DNS Zone ID Output
+    Value: !Ref DNS
+    Export:
+      Name: !Sub "${AWS::StackName}-DNS"
   RootDnsName:
     Description: Root DNS Name
     Value: !FindInMap [ DNSSubdomainMap, !Ref Environment, root ]

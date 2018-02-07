@@ -10,7 +10,7 @@ fi
 set -e
 
 echo Logging into ECR
-$(aws ecr get-login --region $AWS_REGION)
+$(aws ecr get-login --no-include-email --region $AWS_REGION)
 
 image="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/web-community-cdn-assembler:$tag"
 

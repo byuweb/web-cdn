@@ -4,6 +4,7 @@ phases:
   install:
     commands:
       - chmod a+x .codebuild/setup.sh && .codebuild/setup.sh
+      - pip install awscli --upgrade --user
   pre_build:
     commands:
       - lerna bootstrap

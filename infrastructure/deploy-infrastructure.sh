@@ -10,9 +10,7 @@ dns_stack=web-community-cdn-dns-$env
 roles_stack=web-community-cdn-roles
 
 if [ "$env" = "prod" ]; then
-  dns_stack=WebCommunityCDN-dns
-  echo 'prod deployment not yet supported'
-  exit 0
+  dns_stack=WebCommunityCDN-DNS-Prod
 fi
 
 getStackOutput() {
@@ -26,9 +24,13 @@ getStackOutput() {
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 working=$(pwd)
 
-nonce=$(date +"%s")
+now=$(date +"%s")
 
-packaged=/tmp/web-community-packaged-infrastructure-$nonce.yml
+echo "computing alias resolver shasum"
+alias_resolver_hash=`find packages/alias-resolver-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
+echo "Alias resolver hash is $alias_resolver_hash"
+
+packaged=/tmp/web-community-packaged-infrastructure-$now.yml
 
 staging_bucket_or=byu-web-community-cdn-infra-staging-$env-us-west-2
 
@@ -59,10 +61,16 @@ stackname=web-community-cdn-$env
 if aws cloudformation deploy \
     --template-file $packaged \
     --stack-name $stackname \
+    --tags \
+      app="Web Community CDN" \
+      team=OIT_APP_DEV__STUDENT_LIFE_APPS \
+      env=$env \
+      data-sensitivity=public \
+      if-questions-contact="Joseph Moore James Speirs Katria Lesser" \
     --parameter-overrides \
       Environment=$env \
       DnsStackName=$dns_stack \
-      Nonce=$nonce \
+      AliasResolverFunctionHash=$alias_resolver_hash \
       RolesStackName=$roles_stack \
       ApplyDns=true 2>/tmp/cfn-error.txt; then
   echo "Deployment Finished"

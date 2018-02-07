@@ -85,8 +85,8 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: "Allow"
-                Action: "codepipeline:StartPipelineExecution"
-                Resource: !Sub "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:web-community-cdn-*-assembler-pipeline"
+                Action: "codebuild:StartBuild"
+                Resource: !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/web-community-cdn-*-assembler"
   EdgeLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -137,6 +137,9 @@ Resources:
                   - 'lambda:TagResource'
                   - 'lambda:UntagResource'
                   - 'lambda:ListTags'
+                  - 'cloudfront:TagResource'
+                  - 'cloudfront:UntagResource'
+                  - 'cloudfront:ListTagsForResource'
                 Resource:
                   - '*'
         - PolicyName: AllowPassRole
@@ -248,6 +251,7 @@ Resources:
                   - !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/*"
               - Effect: Allow
                 Action:
+                  - 'cloudformation:GetTemplateSummary'
                   - 'cloudformation:ValidateTemplate'
                 Resource:
                   - '*'
