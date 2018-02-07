@@ -11,8 +11,6 @@ roles_stack=web-community-cdn-roles
 
 if [ "$env" = "prod" ]; then
   dns_stack=WebCommunityCDN-DNS-Prod
-  echo 'prod deployment not yet supported'
-  exit 0
 fi
 
 getStackOutput() {
