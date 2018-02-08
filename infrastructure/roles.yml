@@ -135,7 +135,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'lambda:TagResource'
-                  - 'lambda:UntagResource'
+                  - 'lambda:UntagResource*'
                   - 'lambda:ListTags'
                   - 'cloudfront:TagResource'
                   - 'cloudfront:UntagResource'
@@ -294,7 +294,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'lambda:TagResource'
-                  - 'lambda:UntagResource'
+                  - 'lambda:UntagResource*' # The wildcard is necessary due to a bug in the Lambda API
                   - 'lambda:ListTags'
                 Resource:
                   - '*'
