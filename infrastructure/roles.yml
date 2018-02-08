@@ -175,6 +175,23 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
+        - PolicyName: AllowCreateServiceLinkedRoles
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'iam:CreateServiceLinkedRole'
+                Resource:
+                  - 'arn:aws:iam::*:role/aws-service-role/replicator.lambda.amazonaws.com/AWSServiceRoleForLambdaReplicator'
+                Condition:
+                  StringLike:
+                    "iam:AWSServiceName": replicator.lambda.amazonaws.com
+              - Effect: Allow
+                Action:
+                  - 'iam:PutRolePolicy'
+                Resource:
+                  - 'arn:aws:iam::*:role/aws-service-role/replicator.lambda.amazonaws.com/AWSServiceRoleForLambdaReplicator'
         - PolicyName: AllowCloudWatchLogs
           PolicyDocument:
             Version: '2012-10-17'
