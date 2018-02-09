@@ -325,10 +325,6 @@ Resources:
       Timeout: 3
       Role:
         Fn::ImportValue: !Sub "${RolesStackName}-EdgeLambdaExecutionRole"
-      Environment:
-        Variables:
-          CDN_ALIAS_CACHE_TIME_USER: !FindInMap [ AliasRedirectCacheTime, !Ref Environment, user ]
-          CDN_ALIAS_CACHE_TIME_CACHE: !FindInMap [ AliasRedirectCacheTime, !Ref Environment, cache ]
     Tags:
       - Key: Name
         Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Alias Resolver ] ]

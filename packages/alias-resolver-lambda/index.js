@@ -20,8 +20,8 @@ const fetch = require('node-fetch');
 
 const ALIAS_REGEX = /^\/(.*?)\/((?:(?:\d+\.(?:\d+|x)\.x)|latest|unstable))\//;
 
-const CACHE_TIME_USER = process.env.CDN_ALIAS_CACHE_TIME_USER;
-const CACHE_TIME_CACHE = process.env.CDN_ALIAS_CACHE_TIME_CACHE;
+const CACHE_TIME_USER = 3600;
+const CACHE_TIME_CACHE = 300;
 
 let oldAliases;
 
