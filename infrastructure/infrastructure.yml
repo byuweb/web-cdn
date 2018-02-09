@@ -73,6 +73,16 @@ Mappings:
     dev:
       webhooks: webhooks-dev.cdn.byu.edu
       cdn: dev.cdn.byu.edu
+  AliasRedirectCacheTime:
+    prod:
+      user: 3600
+      cache: 300
+    stg:
+      user: 300
+      cache: 60
+    dev:
+      user: 60
+      cache: 60
 
 Conditions:
   FlatDns: !Or [ !Equals [ !Ref Environment, dev ], !Equals [ !Ref Environment, stg ] ]
@@ -315,6 +325,10 @@ Resources:
       Timeout: 3
       Role:
         Fn::ImportValue: !Sub "${RolesStackName}-EdgeLambdaExecutionRole"
+      Environment:
+        Variables:
+          CDN_ALIAS_CACHE_TIME_USER: !FindInMap [ AliasRedirectCacheTime, !Ref Environment, user ]
+          CDN_ALIAS_CACHE_TIME_CACHE: !FindInMap [ AliasRedirectCacheTime, !Ref Environment, cache ]
     Tags:
       - Key: Name
         Value: !Join [ " ", [ !FindInMap [ Bucket, !Ref Environment, name ], Web Community CDN Alias Resolver ] ]

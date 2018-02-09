@@ -20,6 +20,9 @@ const fetch = require('node-fetch');
 
 const ALIAS_REGEX = /^\/(.*?)\/((?:(?:\d+\.(?:\d+|x)\.x)|latest|unstable))\//;
 
+const CACHE_TIME_USER = process.env.CDN_ALIAS_CACHE_TIME_USER;
+const CACHE_TIME_CACHE = process.env.CDN_ALIAS_CACHE_TIME_CACHE;
+
 let oldAliases;
 
 exports.handler = (event, context, callback) => {
@@ -77,7 +80,7 @@ exports.handler = (event, context, callback) => {
                     }],
                     'cache-control': [{
                         key: 'Cache-Control',
-                        value: 'public, max-age=300, s-maxage=300'
+                        value: `public, max-age=${CACHE_TIME_USER}, s-maxage=${CACHE_TIME_CACHE}`
                     }],
                     'x-byu-cdn-alias-target': [{
                         key: 'X-BYU-CDN-Alias-Target',
