@@ -207,7 +207,7 @@ exports.handler = function handler(event, context, callback) {
             const sourceKeys = Object.keys(sourceTags);
             const targetKeys = Object.keys(targetTags);
 
-            const toDrop = targetKeys.filter(key => !sourceTags.includes(key));
+            const toDrop = targetKeys.filter(key => !sourceKeys.includes(key));
             const toSet = {};
 
             sourceKeys.forEach(key => {
