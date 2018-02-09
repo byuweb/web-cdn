@@ -95,7 +95,7 @@ exports.handler = function handler(event, context, callback) {
                 promise = createTarget(source, newConfig);
             }
             return promise.then(result => {
-                return copyTags(source.FunctionArn, result.id).then(() => result);
+                return copyTags(source.Configuration.FunctionArn, result.id).then(() => result);
             });
         }).then(updateResult => {
             console.log('Finished update or create with result', JSON.stringify(updateResult, null, 2));
@@ -192,12 +192,17 @@ exports.handler = function handler(event, context, callback) {
     }
 
     function copyTags(sourceArn, targetArn) {
+        console.log(`Syncing tags from ${sourceArn} to ${targetArn}`);
+
         const sourcePromise = lambdaWest.listTags({Resource: sourceArn}).promise();
         const targetPromise = lambdaEast.listTags({Resource: targetArn}).promise();
 
         return Promise.all([sourcePromise, targetPromise]).then(([source, target]) => {
             const sourceTags = source.Tags;
             const targetTags = target.Tags;
+
+            console.log('Source has tags', JSON.stringify(sourceTags, null, 2));
+            console.log('Target has tags', JSON.stringify(targetTags, null, 2));
 
             const sourceKeys = Object.keys(sourceTags);
             const targetKeys = Object.keys(targetTags);
@@ -218,13 +223,19 @@ exports.handler = function handler(event, context, callback) {
                 }
             });
 
+            console.log('Dropping keys', toDrop);
+            console.log('Setting tags', JSON.stringify(toSet, null, 2));
+
             return lambdaEast.untagResource({
                 Resource: targetArn,
-                TagKeys: toDrop
+                TagKeys: toDrop,
             }).promise().then(() => {
+                if (Object.keys(toSet).length === 0) {
+                    return;
+                }
                 return lambdaEast.tagResource({
                     Resource: targetArn,
-                    Tags: toSet
+                    Tags: toSet,
                 }).promise();
             });
         });
