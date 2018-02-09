@@ -87,29 +87,28 @@ exports.handler = function handler(event, context, callback) {
 
             console.log('Config should match', JSON.stringify(newConfig, null, 2));
 
+            let promise;
+
             if (target) {
-                return updateTarget(source, target, newConfig);
+                promise = updateTarget(source, target, newConfig);
             } else {
-                return createTarget(source, newConfig);
+                promise = createTarget(source, newConfig);
             }
+            return promise.then(result => {
+                return copyTags(source.FunctionArn, result.id).then(() => result);
+            });
         }).then(updateResult => {
             console.log('Finished update or create with result', JSON.stringify(updateResult, null, 2));
             let newConfig = updateResult.config;
 
-            let versionPromise;
-
-            if (updateResult.publish) {
-                console.log('Publishing new version');
-                versionPromise = lambdaEast.publishVersion({
-                    FunctionName: newConfig.FunctionName,
-                    CodeSha256: newConfig.CodeSha256
-                }).promise().then(result => {
-                    console.log('Published new version', result.Version);
-                    return Number(result.Version)
-                });
-            } else {
-                versionPromise = getLatestEastVersion(functionName);
-            }
+            console.log('Publishing new version');
+            let versionPromise = lambdaEast.publishVersion({
+                FunctionName: newConfig.FunctionName,
+                CodeSha256: newConfig.CodeSha256
+            }).promise().then(result => {
+                console.log('Published new version', result.Version);
+                return Number(result.Version)
+            });
 
             return versionPromise.then(version => {
                 let arn = cleanFunctionArn(updateResult.id);
@@ -142,27 +141,17 @@ exports.handler = function handler(event, context, callback) {
         };
     }
 
-    function configIsDifferent(source, target) {
-        return source.Description !== target.Description ||
-            source.Handler !== target.Handler ||
-            source.MemorySize !== target.MemorySize ||
-            source.Role !== target.Role ||
-            source.Runtime !== target.Runtime ||
-            source.Timeout !== target.Timeout
-    }
-
     function createTarget(source, newConfig) {
         console.log(`creating ${newConfig.FunctionName} in us-east-1`);
 
         return fetch(source.Code.Location).then(resp => resp.buffer())
             .then(zip => {
                 newConfig.Code = {ZipFile: zip};
-                newConfig.Publish = true;
+                newConfig.Publish = false;
                 return lambdaEast.createFunction(newConfig).promise()
                     .then(cfg => {
                         console.log('Created new function', cfg);
                         return {
-                            publish: false, //We're publishing as part of the create
                             config: cfg,
                             id: cfg.FunctionArn
                         }
@@ -179,7 +168,6 @@ exports.handler = function handler(event, context, callback) {
                 if (source.Configuration.CodeSha256 === target.Configuration.CodeSha256) {
                     console.log('Code hasn\'t changed');
                     return {
-                        publish: configIsDifferent(source, target),
                         config: result,
                         id: result.FunctionArn
                     };
@@ -191,13 +179,11 @@ exports.handler = function handler(event, context, callback) {
                     .then(zip => {
                         return lambdaEast.updateFunctionCode({
                             FunctionName: newConfig.FunctionName,
-                            Publish: true,
                             ZipFile: zip
                         }).promise();
                     }).then(cfg => {
                         console.log('Updated function code');
                         return {
-                            publish: false, //already published
                             config: cfg,
                             id: cfg.FunctionArn
                         }
@@ -205,32 +191,43 @@ exports.handler = function handler(event, context, callback) {
             });
     }
 
-    function getLatestEastVersion(functionName) {
-        console.log('Getting latest version in us-east-1 of', functionName);
-        return makeCall(null, []).then(versions => {
-            let versionNumbers = versions.map(it => Number(it.Version))
-                .filter(it => !isNaN(it));//Filter out non-numeric versions, like '$LATEST'
+    function copyTags(sourceArn, targetArn) {
+        const sourcePromise = lambdaWest.listTags({Resource: sourceArn}).promise();
+        const targetPromise = lambdaEast.listTags({Resource: targetArn}).promise();
 
-            console.log('Got version numbers', versionNumbers);
+        return Promise.all([sourcePromise, targetPromise]).then(([source, target]) => {
+            const sourceTags = source.Tags;
+            const targetTags = target.Tags;
 
-            let version =  String(versionNumbers.reduce((acc, cur) => Math.max(acc, cur)));
-            console.log('got version', version);
-            return version;
-        });
+            const sourceKeys = Object.keys(sourceTags);
+            const targetKeys = Object.keys(targetTags);
 
-        function makeCall(marker, previousResult) {
-            return lambdaEast.listVersionsByFunction({
-                FunctionName: functionName,
-                Marker: marker,
-                MaxItems: '100'
-            }).promise().then(data => {
-                let result = previousResult.concat(data.Versions);
-                if (data.NextMarker) {
-                    return makeCall(data.NextMarker, result)
-                } else {
-                    return result;
+            const toDrop = targetKeys.filter(key => !sourceTags.includes(key));
+            const toSet = {};
+
+            sourceKeys.forEach(key => {
+                const value = sourceTags[key];
+                const missingInTarget = !targetKeys.includes(key);
+                const differentInTarget = targetKeys[key] !== value;
+
+                if (missingInTarget || differentInTarget) {
+                    toSet[key] = value;
+                }
+                if (differentInTarget) {
+                    toDrop.push(key);
                 }
             });
-        }
+
+            return lambdaEast.untagResource({
+                Resource: targetArn,
+                TagKeys: toDrop
+            }).promise().then(() => {
+                return lambdaEast.tagResource({
+                    Resource: targetArn,
+                    Tags: toSet
+                }).promise();
+            });
+        });
     }
+
 };

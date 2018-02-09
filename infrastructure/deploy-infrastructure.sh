@@ -27,7 +27,7 @@ working=$(pwd)
 now=$(date +"%s")
 
 echo "computing alias resolver shasum"
-alias_resolver_hash=`find packages/alias-resolver-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
+alias_resolver_hash=`find packages/alias-resolver-lambda infrastructure/custom-resources/copy-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
 echo "Alias resolver hash is $alias_resolver_hash"
 
 packaged=/tmp/web-community-packaged-infrastructure-$now.yml
