@@ -200,7 +200,6 @@ Resources:
 
   WebhookDNS:
     Type: AWS::Route53::RecordSetGroup
-    Condition: ApplyDns
     Properties:
       HostedZoneId: !Ref DNS
       Comment: DNS for CDN Webhooks
@@ -258,7 +257,6 @@ Resources:
 
   WebsiteDNS:
     Type: AWS::Route53::RecordSetGroup
-    Condition: ApplyDns
     Properties:
       HostedZoneId: !Ref DNS
       Comment: !Sub "Cloudfront DNS for ${CDNName} ${Environment}"
