@@ -6,8 +6,6 @@ env:
     ACCOUNT_STACK_NAME: web-community-cdn-account
     CONFIG_REPO: byuweb/web-cdn
     EXTRA_TAGS: data-sensitivity=public team="BYU Web Community" if-questions-contact="Joseph Moore + James Spiers + Katria Lesser"
-  parameter-store:
-    CERTIFICATE_ARN: web-community-cdn.certificate-arn
 
 phases:
   install:
