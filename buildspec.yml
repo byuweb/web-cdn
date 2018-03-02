@@ -12,12 +12,10 @@ phases:
     commands:
       - chmod a+x .codebuild/setup.sh && .codebuild/setup.sh
       - pip install awscli --upgrade --user
+      - mkdir -p /root/.cache/yarn && yarn config set cache-folder /root/.cache/yarn
   pre_build:
     commands:
       - lerna bootstrap
-      - ls -al /root/
-      - ls -al /root/.cache/
-      - yarn cache dir
       - lerna exec -- chmod a+x ./codebuild.sh
       - chmod a+x infrastructure/deploy-environment.sh
   build:
@@ -29,4 +27,4 @@ phases:
 cache:
   paths:
     - /var/cache/apt/archives/**/*
-    - /root/.cache/
+    - /root/.cache/**/*
