@@ -17,6 +17,7 @@ phases:
       - lerna bootstrap
       - ls -al /root/
       - ls -al /root/.cache/
+      - yarn cache dir
       - lerna exec -- chmod a+x ./codebuild.sh
       - chmod a+x infrastructure/deploy-environment.sh
   build:
