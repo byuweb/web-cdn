@@ -10,24 +10,26 @@ Parameters:
       - dev
       - stg
       - prod
+  RootDNS:
+    Type: String
+    Description: The root DNS zone, on which all other DNS zones should be based.
+    Default: cdn.byu.edu
   RolesStackName:
     Type: String
     Description: CFN stack name of the Roles stack
     Default: web-community-cdn-roles
-  DnsStackName:
-    Type: String
-    Description: CFN stack name of the DNS stack
-  ApplyDns:
-    Type: String
-    Description: Whether or not to create DNS records
-    Default: true
-    AllowedValues:
-      - true
-      - false
   AliasResolverFunctionHash:
     Type: String
     Description: Hash of the files in the Alias Resolver lambda. Used to make the lambda copier work.
     Default: fakesha
+  CertificateArn:
+    Type: String
+    Description: ARN of the ACM certificate to be used for HTTPS
+    AllowedPattern: "^arn:aws:acm:us-east-1:"
+    ConstraintDescription: "The value must be a valid ARN of an ACM certificate in the us-east-1 region."
+  ConfigurationGithubRepository:
+    Type: String
+    Description: The URL of a Github repository
 
 Mappings:
   Certs:
@@ -65,14 +67,17 @@ Mappings:
       min: 0
   DNS:
     prod:
-      webhooks: webhooks-next.cdn.byu.edu
-      cdn: next.cdn.byu.edu
+      cdn: cdn.byu.edu
+      webhooks: webhooks.cdn.byu.edu
+      metrics: metrics.cdn.byu.edu
     stg:
-      webhooks: webhooks-beta.cdn.byu.edu
       cdn: beta.cdn.byu.edu
+      webhooks: webhooks.beta.cdn.byu.edu
+      metrics: metrics.beta.cdn.byu.edu
     dev:
-      webhooks: webhooks-dev.cdn.byu.edu
       cdn: dev.cdn.byu.edu
+      webhooks: webhooks.dev.cdn.byu.edu
+      metrics: metrics.dev.cdn.byu.edu
   AliasRedirectCacheTime:
     prod:
       user: 3600
@@ -84,12 +89,30 @@ Mappings:
       user: 60
       cache: 60
 
-Conditions:
-  FlatDns: !Or [ !Equals [ !Ref Environment, dev ], !Equals [ !Ref Environment, stg ] ]
-  NestedDns: !Equals [ !Ref Environment, prod ]
-  ApplyDns: !Equals [ !Ref ApplyDns, true ]
-
 Resources:
+
+  DNS:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      HostedZoneConfig:
+        Comment: !Sub "${Environment} Web Community CDN DNS Zone"
+      Name: !Sub
+        - ${Domain}.
+        - { Domain: !FindInMap [ DNSSubdomainMap, !Ref Environment, root ] }
+      HostedZoneTags:
+      - Key: Name
+        Value: !Join [ " ", [ !FindInMap [ DNSSubdomainMap, !Ref Environment, root ], Web Community CDN DNS Zone ] ]
+      - Key: team
+        # This isn't necessarily accurate, but it's the best group I can find for it.
+        Value: OIT_APP_DEV__STUDENT_LIFE_APPS
+      - Key: env
+        Value: !Ref Environment
+      - Key: data-sensitivity
+        Value: public
+      - Key: app
+        Value: Web Community CDN
+    DeletionPolicy: Retain
+
   ContentBucket:
     Type: AWS::S3::Bucket
     Properties:
