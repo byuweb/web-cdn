@@ -197,9 +197,6 @@ Resources:
           Properties:
             Path: /{proxy+}
             Method: POST
-      Tags:
-      - Key: Name
-        Value: !Sub "${CDNName} ${Environment} Webhooks"
 
   WebhookDNS:
     Type: AWS::Route53::RecordSetGroup
@@ -288,9 +285,6 @@ Resources:
       Timeout: 3
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
-      Tags:
-      - Key: Name
-        Value: !Sub "${CDNName} ${Environment} Alias Resolver"
 
   PublishLambdaVersionCustomResource:
     # This will take the $LATEST version of a function and publish a new version
@@ -303,9 +297,6 @@ Resources:
       Timeout: 60
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-CloudformationCustomResourcesRole"
-      Tags:
-      - Key: Name
-        Value: !Sub "${CDNName} ${Environment} Alias Version Publisher Custom Resource"
 
   AliasResolverVersion:
     Type: Custom::PublishLambdaVersionCustomResource
