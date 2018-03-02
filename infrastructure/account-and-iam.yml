@@ -1,35 +1,48 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
+Description: "Account-wide resources and IAM permissions for the Serverless CDN"
+Parameters:
+  CDNName:
+    Type: String
+    Description: "A name for this particular CDN. Must be unique, though different 'Environment' values can share the same name."
+    AllowedPattern: "^[a-zA-Z0-9\\-_]*$"
 Resources:
-  AllowCloudFrontInvalidation:
-    Type: AWS::IAM::Policy
+  AssemblerRepository:
+    Type: AWS::ECR::Repository
     Properties:
-      PolicyName: AllowCloudFrontInvalidation
-      Roles:
-        - !Ref CdnBuilderRole
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - cloudfront:CreateInvalidation
-              - cloudfront:GetInvalidation
-              - cloudfront:ListInvalidations
-            Resource: "*"
-  AllowCdnParameterStoreAccess:
-    Type: AWS::IAM::Policy
+      RepositoryName: !Sub "${CDNName}-assembler"
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 10,
+                "description": "Clean up old images",
+                "selection": {
+                  "tagStatus": "untagged",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 20
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+  CfnStagingBucket:
+    Type: AWS::S3::Bucket
     Properties:
-      PolicyName: AllowCdnParameterStoreAcccess
-      Roles:
-        - !Ref CdnBuilderRole
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - ssm:DescribeParameters
-              - ssm:GetParameters
-            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/web-community-cdn.*"
+      AccessControl: Private
+      BucketName: !Sub "${CDNName}-cfn-staging-${AWS::Region}-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireOldResources
+          ExpirationInDays: 60
+          Status: Enabled
+      Tags:
+      - Key: Name
+        Value: !Sub "${CDNName} Cloudformation Staging Bucket"
 
   CdnBuilderRole:
     Type: AWS::IAM::Role
@@ -43,11 +56,30 @@ Resources:
                 - "codebuild.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-      Path: "/web-community-cdn/"
+      Path: !Sub "/${CDNName}/"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/CloudFrontReadOnlyAccess"
         - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
       Policies:
+        - PolicyName: AllowCdnParameterStoreAcccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                  - ssm:GetParameters
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CDNName}.*"
+        - PolicyName: AllowCloudFrontInvalidation
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudfront:CreateInvalidation
+                  - cloudfront:GetInvalidation
+                  - cloudfront:ListInvalidations
+                Resource: "*"
         - PolicyName: "AllowAssemblerImageAccess"
           PolicyDocument:
             Version: "2012-10-17"
@@ -62,7 +94,7 @@ Resources:
                   - "ecr:ListImages"
                   - "ecr:DescribeImages"
                   - "ecr:BatchGetImage"
-                Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/web-community-cdn-assembler"
+                Resource: !GetAtt AssemblerRepository.Arn
 
   CdnBuildInvokerRole:
     Type: AWS::IAM::Role
@@ -76,7 +108,7 @@ Resources:
                 - "lambda.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-      Path: "/web-community-cdn/"
+      Path: !Sub "/${CDNName}/"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       Policies:
@@ -86,12 +118,11 @@ Resources:
             Statement:
               - Effect: "Allow"
                 Action: "codebuild:StartBuild"
-                Resource: !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/web-community-cdn-*-assembler"
+                Resource: !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CDNName}-*-assembler"
   EdgeLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      Path: /web-community-cdn/
-      RoleName: web-community-cdn-edge-lambda
+      Path: !Sub "/${CDNName}/"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -108,8 +139,8 @@ Resources:
   CloudformationCustomResourcesRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      Path: /web-community-cdn/
-      RoleName: web-community-cdn-cfn-custom-res
+      Path: !Sub "/${CDNName}/"
+      RoleName: !Sub "${CDNName}-cfn-custom-res"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -122,26 +153,18 @@ Resources:
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       Policies:
-        - PolicyName: "AllowLambdaManipulation"
+        - PolicyName: "AllowLambdaVersioning"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - 'lambda:*'
+                  - 'lambda:PublishVersion'
+                  - 'lambda:Get*'
+                  - 'lambda:List*'
+                  - 'lambda:UpdateAlias'
                 Resource:
-                  - !Sub "arn:aws:lambda:us-west-2:${AWS::AccountId}:function:web-community-cdn-*"
-                  - !Sub "arn:aws:lambda:us-east-1:${AWS::AccountId}:function:web-community-cdn-*"
-              - Effect: Allow
-                Action:
-                  - 'lambda:TagResource'
-                  - 'lambda:UntagResource*'
-                  - 'lambda:ListTags'
-                  - 'cloudfront:TagResource'
-                  - 'cloudfront:UntagResource'
-                  - 'cloudfront:ListTagsForResource'
-                Resource:
-                  - '*'
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CDNName}-*"
         - PolicyName: AllowPassRole
           PolicyDocument:
             Version: '2012-10-17'
@@ -151,20 +174,20 @@ Resources:
                   - 'iam:GetRole'
                   - 'iam:PassRole'
                 Resource:
-                  - "arn:aws:iam::*:role/web-community-cdn/*"
+                  - !Sub "arn:aws:iam::*:role/${CDNName}/*"
               # Deny the ability to pass the all-powerful cloudformation role
               - Effect: Deny
                 Action:
                   - 'iam:PassRole'
                 Resource:
-                  - "arn:aws:iam::*:role/web-community-cdn/cfn-deploy"
+                  - !GetAtt CloudformationDeploymentRole.Arn
 
 
   CloudformationDeploymentRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      Path: /web-community-cdn/
-      RoleName: web-community-cdn-cfn-deploy
+      Path: !Sub "/${CDNName}/"
+      RoleName: !Sub "${CDNName}-cfn-deploy"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -222,7 +245,7 @@ Resources:
                 Action:
                   - 'ecr:*'
                 Resource:
-                  - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/web-community-cdn-*"
+                  - !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${CDNName}-*"
               - Effect: Allow
                 Action:
                   - 'ecr:GetAuthorizationToken'
@@ -236,7 +259,7 @@ Resources:
                 Action:
                   - 'codebuild:*'
                 Resource:
-                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/web-community-cdn-*"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CDNName}-*"
         - PolicyName: AllowS3Access
           PolicyDocument:
             Version: '2012-10-17'
@@ -245,8 +268,7 @@ Resources:
                 Action:
                   - 's3:*'
                 Resource:
-                  - 'arn:aws:s3:::web-community-cdn-*'
-                  - 'arn:aws:s3:::byu-web-community-cdn-*'
+                  - !Sub 'arn:aws:s3:::${CDNName}-*'
         - PolicyName: AllowApiGatewayAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -264,7 +286,7 @@ Resources:
                 Action:
                   - 'cloudformation:*'
                 Resource:
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/web-community-cdn-*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${CDNName}-*"
                   - !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/*"
               - Effect: Allow
                 Action:
@@ -289,8 +311,8 @@ Resources:
                 Action:
                   - 'lambda:*'
                 Resource:
-                  - !Sub "arn:aws:lambda:us-west-2:${AWS::AccountId}:function:web-community-cdn-*"
-                  - !Sub "arn:aws:lambda:us-east-1:${AWS::AccountId}:function:web-community-cdn-*"
+                  - !Sub "arn:aws:lambda:us-west-2:${AWS::AccountId}:function:${CDNName}-*"
+                  - !Sub "arn:aws:lambda:us-east-1:${AWS::AccountId}:function:${CDNName}-*"
               - Effect: Allow
                 Action:
                   - 'lambda:TagResource'
@@ -316,13 +338,13 @@ Resources:
                   - 'iam:GetRole'
                   - 'iam:PassRole'
                 Resource:
-                  - "arn:aws:iam::*:role/web-community-cdn/*"
+                  - !Sub "arn:aws:iam::*:role/${CDNName}/*"
               # Deny the ability to pass ourself as a role to another service
               - Effect: Deny
                 Action:
                   - 'iam:PassRole'
                 Resource:
-                  - "arn:aws:iam::*:role/web-community-cdn/web-community-cdn-cfn-deploy"
+                  - !Sub "arn:aws:iam::*:role/${CDNName}/${CDNName}-cfn-deploy"
 
 
 Outputs:
@@ -351,5 +373,21 @@ Outputs:
     Value: !GetAtt CloudformationCustomResourcesRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-CloudformationCustomResourcesRole"
+  AssemblerRepositoryArn:
+    Description: ECR assembler repository ARN
+    Value: !GetAtt AssemblerRepository.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-AssemblerRepositoryArn"
+  AssemblerRepositoryUri:
+    Description: ECR assembler repository URI
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AssemblerRepository}"
+    Export:
+      Name: !Sub "${AWS::StackName}-AssemblerRepositoryUri"
+  CfnStagingBucketName:
+    Description: Cloudformation staging bucket name
+    Value: !Ref CfnStagingBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-CfnStagingBucket"
+
 
 

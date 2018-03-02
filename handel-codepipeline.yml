@@ -16,7 +16,10 @@ pipelines:
         build_image: aws/codebuild/docker:17.09.0
         environment_variables:
           ENV: prod
+          ROOT_DNS: cdn.byu.edu
+          CONFIG_BRANCH: master
         build_role: web-community-cdn-cfn-deploy
+        cache: s3
       - type: slack_notify
         name: Notify
         message: "Prod CDN Assembler Build Finished"
@@ -33,7 +36,10 @@ pipelines:
         build_image: aws/codebuild/docker:17.09.0
         environment_variables:
           ENV: stg
+          ROOT_DNS: beta.cdn.byu.edu
+          CONFIG_BRANCH: beta
         build_role: web-community-cdn-cfn-deploy
+        cache: s3
       - type: slack_notify
         name: Notify
         message: "Beta CDN Assembler Build Finished"
@@ -44,13 +50,16 @@ pipelines:
         name: GitHub
         owner: byuweb
         repo: web-cdn
-        branch: beta
+        branch: dev
       - type: codebuild
         name: Build
         build_image: aws/codebuild/docker:17.09.0
         environment_variables:
           ENV: dev
+          ROOT_DNS: dev.cdn.byu.edu
+          CONFIG_BRANCH: dev
         build_role: web-community-cdn-cfn-deploy
+        cache: s3
       - type: slack_notify
         name: Notify
         message: "Dev CDN Assembler Build Finished"

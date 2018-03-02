@@ -10,7 +10,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "aws-sdk": "^2.142.0",
-    "cfn-response": "^1.0.1",
+    "cfn-responder": "^1.0.2",
     "node-fetch": "^1.7.3"
   }
 }

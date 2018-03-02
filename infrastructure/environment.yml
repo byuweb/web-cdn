@@ -1,0 +1,323 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "All resources for a single environment of a CDN deployment"
+Parameters:
+  CDNName:
+    Type: String
+    Description: A name for this particular CDN. Must be unique, though different 'Environment' values can share the same name.
+    AllowedPattern: "^[a-zA-Z0-9\-_]*$"
+  Environment:
+    Type: String
+    Description: Deployment environment
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+  RootDNS:
+    Type: String
+    Description: The root DNS zone, on which all other DNS zones should be based. Will create 'webhooks.' and 'metrics.' subdomains.
+    Default: cdn.byu.edu
+  AccountStackName:
+    Type: String
+    Description: CFN stack name of the Roles stack
+  CertificateArn:
+    Type: String
+    Description: ARN of the ACM certificate to be used for HTTPS. This cert should cover the root DNS zone, as well as 'webhooks.' and 'metrics.' subdomains.
+    AllowedPattern: "^arn:aws:acm:us-east-1:"
+    ConstraintDescription: "The value must be a valid ARN of an ACM certificate in the us-east-1 region."
+  ConfigurationGithubRepo:
+    Type: String
+    Description: The URL of a Github repository
+  ConfigurationGithubBranch:
+    Type: String
+    Description: The repository branch to use for configuration changes
+  AliasResolverFunctionHash:
+    Type: String
+    Description: Hash of the files in the Alias Resolver lambda. Used to make the lambda version tagging work.
+    Default: fakesha
+
+Mappings:
+  CacheTTL:
+    prod:
+      default: 3600
+      max: 86400
+      min: 0
+    stg:
+      default: 30
+      max: 300
+      min: 0
+    dev:
+      default: 30
+      max: 300
+      min: 0
+  AliasRedirectCacheTime:
+    prod:
+      user: 3600
+      cache: 300
+    stg:
+      user: 300
+      cache: 60
+    dev:
+      user: 60
+      cache: 60
+
+Resources:
+
+  DNS:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      HostedZoneConfig:
+        Comment: !Sub "${CDNName} ${Environment} CDN DNS Zone"
+      Name: !Sub "${RootDNS}."
+      HostedZoneTags:
+      - Key: Name
+        Value: !Sub "${CDNName} ${Environment} DNS Zone"
+    DeletionPolicy: Retain
+
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Sub "${CDNName}-contents-${AWS::Region}-${AWS::AccountId}"
+      CorsConfiguration:
+        CorsRules:
+        - Id: AllowAllGets
+          AllowedHeaders: ['*']
+          AllowedMethods: [GET]
+          AllowedOrigins: ['*']
+          ExposedHeaders: [Date]
+          MaxAge: '3600'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireOldVersions
+          NoncurrentVersionExpirationInDays: 180
+          Status: Enabled
+      Tags:
+      - Key: Name
+        Value: !Sub "${CDNName} ${Environment} Contents"
+
+  ContentBucketAllowBuilderUpdates:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${AccountStackName}-BuilderRole"
+            Action:
+              - s3:ListBucket
+              - s3:PutBucketWebsite
+              - s3:Get*
+            Resource: !Sub "arn:aws:s3:::${ContentBucket}"
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${AccountStackName}-BuilderRole"
+            Action:
+              - s3:*
+            Resource: !Sub "arn:aws:s3:::${ContentBucket}/*"
+
+  CdnBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${CDNName}-${Environment}-assembler"
+      Description: Assembles, builds, and deploys the contents of the CDN
+      Artifacts:
+        Type: no_artifacts
+      Source:
+        Type: GITHUB
+        Location: !Sub "https://github.com/${ConfigurationGithubRepo}.git"
+        Auth:
+          Type: OAUTH
+        BuildSpec: buildspec-assembler.yml
+      TimeoutInMinutes: 10
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: !Sub
+          - "${Base}:${Environment}"
+          - Base:
+              Fn::ImportValue: !Sub "${AccountStackName}-AssemblerRepositoryUri"
+        EnvironmentVariables:
+          - Name: DESTINATION_S3_BUCKET
+            Value: !Ref ContentBucket
+          - Name: BUILD_ENV
+            Value: !Ref Environment
+          - Name: CDN_HOST
+            Value: !Ref RootDNS
+      ServiceRole:
+        Fn::ImportValue: !Sub "${AccountStackName}-BuilderRole"
+      Tags:
+      - Key: Name
+        Value: !Sub "${CDNName} ${Environment} Assembler Project"
+
+  WebhookDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !Ref CertificateArn
+      DomainName: !Sub "webhooks.${RootDNS}"
+
+  WebhookBasePath:
+    DependsOn: [WebhookFunc]
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref WebhookDomain
+      # This is a shameless hack.  We're depending on some auto-generated names that could change at any time.
+      RestApiId: !Ref ServerlessRestApi
+      Stage: !Ref ServerlessRestApiProdStage
+
+  WebhookFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${CDNName}-webhooks-${Environment}"
+      CodeUri: ./../packages/webhooks/
+      Handler: lambda.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 60
+      Role:
+        Fn::ImportValue: !Sub "${AccountStackName}-InvokerRole"
+      Environment:
+        Variables:
+          CDN_BUILDER_NAME: !Ref CdnBuildProject
+          CDN_MAIN_CONFIG_REPO: !Ref ConfigurationGithubRepo
+          CDN_MAIN_CONFIG_BRANCH: !Ref ConfigurationGithubBranch
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: POST
+      Tags:
+      - Key: Name
+        Value: !Sub "${CDNName} ${Environment} Webhooks"
+
+  WebhookDNS:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: ApplyDns
+    Properties:
+      HostedZoneId: !Ref DNS
+      Comment: DNS for CDN Webhooks
+      RecordSets:
+        - Name: !Sub "webhooks.${RootDNS}"
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebhookDomain.DistributionDomainName
+        - Name: !Sub "webhooks.${RootDNS}"
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebhookDomain.DistributionDomainName
+
+  WebsiteCloudfront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub "${CDNName} ${Environment}"
+        Aliases:
+         - !Ref RootDNS
+        Enabled: 'true'
+        HttpVersion: http2
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+        DefaultCacheBehavior:
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          ForwardedValues:
+            QueryString: 'true'
+            Headers: [Origin]
+          TargetOriginId: only-origin
+          ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: !FindInMap [ CacheTTL, !Ref Environment, default ]
+          MaxTTL: !FindInMap [ CacheTTL, !Ref Environment, max ]
+          MinTTL: !FindInMap [ CacheTTL, !Ref Environment, min ]
+          LambdaFunctionAssociations:
+          - EventType: origin-request
+            LambdaFunctionARN: !GetAtt AliasResolverVersion.VersionArn
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        IPV6Enabled: true
+        Origins:
+        - Id: only-origin
+          DomainName: !Select [ 1, !Split [ "://", !GetAtt ContentBucket.WebsiteURL ] ]
+          CustomOriginConfig:
+            HTTPPort: 80
+            HTTPSPort: 443
+            OriginProtocolPolicy: http-only
+      Tags:
+      - Key: Name
+        Value: !Sub "${CDNName} ${Environment} Distribution"
+
+  WebsiteDNS:
+    Type: AWS::Route53::RecordSetGroup
+    Condition: ApplyDns
+    Properties:
+      HostedZoneId: !Ref DNS
+      Comment: !Sub "Cloudfront DNS for ${CDNName} ${Environment}"
+      RecordSets:
+        - Name: !Ref RootDNS
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebsiteCloudfront.DomainName
+        - Name: !Ref RootDNS
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt WebsiteCloudfront.DomainName
+
+  AliasResolverFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${CDNName}-alias-resolver-${Environment}"
+      CodeUri: ./../packages/alias-resolver-lambda/
+      Handler: index.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 3
+      Role:
+        Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
+      Tags:
+      - Key: Name
+        Value: !Sub "${CDNName} ${Environment} Alias Resolver"
+
+  PublishLambdaVersionCustomResource:
+    # This will take the $LATEST version of a function and publish a new version
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./custom-resources/version-lambda/
+      Handler: index.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 60
+      Role:
+        Fn::ImportValue: !Sub "${AccountStackName}-CloudformationCustomResourcesRole"
+      Tags:
+      - Key: Name
+        Value: !Sub "${CDNName} ${Environment} Alias Version Publisher Custom Resource"
+
+  AliasResolverVersion:
+    Type: Custom::PublishLambdaVersionCustomResource
+    Properties:
+      ServiceToken: !GetAtt PublishLambdaVersionCustomResource.Arn
+      LambdaFunctionName: !Ref AliasResolverFunc
+      Nonce: !Ref AliasResolverFunctionHash
+
+Outputs:
+  ContentBucket:
+    Value: !Ref ContentBucket
+  BuildProject:
+    Value: !Ref CdnBuildProject
+  Cloudfront:
+    Value: !Ref WebsiteCloudfront

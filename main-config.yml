@@ -1,41 +1,42 @@
 ---
-2017-core-components:
-  source: github:byuweb/byu-theme-components
-byu-theme-components:
-  source: github:byuweb/byu-theme-components
-byu-card:
-  source: github:byuweb/byu-card
-byu-calendar-row:
-  source: github:byuweb/byu-calendar-row
-byu-calendar-tile:
-  source: github:byuweb/byu-calendar-tile
-web-component-polyfills:
-  source: github:byuweb/web-component-polyfills
-#  source: npm:@webcomponents/webcomponentsjs
-#  configuration:
-#    versions:
-#      "^1.0.7":
-#        resources:
-#          - webcomponents-*.js*
-#          # Copy full web component bundle for backward compatibility
-#          - src: webcomponents-lite.js
-#            rename:
-#              - regex: webcomponents-lite.js
-#                to: web-component-polyfills.min.js
-#              - regex: webcomponents-lite.js
-#                to: web-component-polyfills.js
-shared-icons:
-  source: github:byuweb/shared-icons
-byu-theme-style-helpers:
-  source: github:byuweb/byu-theme-style-helpers
-byu-news-components:
-  source: github:byuweb/byu-news-components
-byu-feature-card:
-  source: github:byuweb/byu-feature-card-component
-byu-hero-banner:
-  source: github:byuweb/byu-hero-banner
-cdn-site:
-  source: github:byuweb/web-cdn-site
-byu-faculty-directory:
-  source: github:byuweb/byu-faculty-directory
+libraries:
+  2017-core-components:
+    source: github:byuweb/byu-theme-components
+  byu-theme-components:
+    source: github:byuweb/byu-theme-components
+  byu-card:
+    source: github:byuweb/byu-card
+  byu-calendar-row:
+    source: github:byuweb/byu-calendar-row
+  byu-calendar-tile:
+    source: github:byuweb/byu-calendar-tile
+  web-component-polyfills:
+    source: github:byuweb/web-component-polyfills
+#    source: npm:@webcomponents/webcomponentsjs
+#    configuration:
+#      versions:
+#        "^1.0.7":
+#          resources:
+#            - webcomponents-*.js*
+#            # Copy full web component bundle for backward compatibility
+#            - src: webcomponents-lite.js
+#              rename:
+#                - regex: webcomponents-lite.js
+#                  to: web-component-polyfills.min.js
+#                - regex: webcomponents-lite.js
+#                  to: web-component-polyfills.js
+  shared-icons:
+    source: github:byuweb/shared-icons
+  byu-theme-style-helpers:
+    source: github:byuweb/byu-theme-style-helpers
+  byu-news-components:
+    source: github:byuweb/byu-news-components
+  byu-feature-card:
+    source: github:byuweb/byu-feature-card-component
+  byu-hero-banner:
+    source: github:byuweb/byu-hero-banner
+  cdn-site:
+    source: github:byuweb/web-cdn-site
+  byu-faculty-directory:
+    source: github:byuweb/byu-faculty-directory
 

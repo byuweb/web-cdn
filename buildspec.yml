@@ -1,5 +1,14 @@
 version: 0.2
 
+env:
+  variables:
+    CDN_NAME: web-community-cdn
+    ACCOUNT_STACK_NAME: web-community-cdn-account
+    CONFIG_REPO: byuweb/web-cdn
+    EXTRA_TAGS: data-sensitivity=public team="BYU Web Community" if-questions-contact="Joseph Moore + James Spiers + Katria Lesser"
+  parameter-store:
+    CERTIFICATE_ARN: web-community-cdn.certificate-arn
+
 phases:
   install:
     commands:
@@ -9,9 +18,9 @@ phases:
     commands:
       - lerna bootstrap
       - lerna exec -- chmod a+x ./codebuild.sh
-      - chmod a+x infrastructure/deploy-infrastructure.sh
+      - chmod a+x infrastructure/deploy-environment.sh
   build:
     commands:
       - lerna exec -- ./codebuild.sh
-      - infrastructure/deploy-infrastructure.sh $ENV
+      - infrastructure/deploy-environment.sh $CDN_NAME $ENV $ROOT_DNS $ACCOUNT_STACK_NAME $CERTIFICATE_ARN $CONFIG_REPO $CONFIG_BRANCH $EXTRA_TAGS
 

@@ -67,8 +67,8 @@ function handleEvent(event, eventType, callerIp, mainConfig, options) {
         .then(() => {
             console.log('running with CDN config', mainConfig);
 
-            let repoIsRegistered = Object.getOwnPropertyNames(mainConfig)
-                .map(k => mainConfig[k])
+            let repoIsRegistered = Object.getOwnPropertyNames(mainConfig.libraries)
+                .map(k => mainConfig.libraries[k])
                 .some(value => value.source === 'github:' + repoName);
 
             if (!repoIsRegistered) {

@@ -27,7 +27,7 @@ const log = require('winston');
 
 module.exports = async function assembleManifest(mainConfig) {
     log.info('Assembling new manifest from config:', JSON.stringify(mainConfig, null, 2));
-    let libs = await Promise.all(Object.entries(mainConfig).map(async function ([id, defn]) {
+    let libs = await Promise.all(Object.entries(mainConfig.libraries).map(async function ([id, defn]) {
         return [id, await loadLib(id, defn)];
     }));
 
