@@ -32,11 +32,13 @@ describe('assemble-manifest', function() {
 
     it('should fetch libraries from main config', async function() {
         let cfg = {
-            foo: {
-                source: 'github:foo/bar'
-            },
-            baz: {
-                source: 'test:baz'
+            libraries: {
+                foo: {
+                    source: 'github:foo/bar'
+                },
+                baz: {
+                    source: 'test:baz'
+                }
             }
         };
 
