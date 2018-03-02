@@ -19,7 +19,7 @@ docker pull $image || true
 
 echo Building Docker Image
 
-docker build . -t $image --from-cache $image
+docker build . -t $image --cache-from $image
 
 echo "Run Tests"
 
