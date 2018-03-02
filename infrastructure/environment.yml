@@ -6,7 +6,7 @@ Parameters:
   CDNName:
     Type: String
     Description: A name for this particular CDN. Must be unique, though different 'Environment' values can share the same name.
-    AllowedPattern: "^[a-zA-Z0-9\-_]*$"
+    AllowedPattern: "^[a-zA-Z0-9\\-_]*$"
   Environment:
     Type: String
     Description: Deployment environment

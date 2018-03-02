@@ -43,14 +43,14 @@ cd ${here}/custom-resources/version-lambda && yarn --production || exit 1
 cd ${working}
 
 aws cloudformation validate-template \
-    --template-body file://${here}/environment.yml
+    --template-body file://${here}/environment.yml || exit 1
 
 echo Packaging to s3://${stagingBucket}
 
 aws cloudformation package \
     --template-file ${here}/environment.yml \
     --s3-bucket ${stagingBucket} \
-    --output-template-file ${packaged}
+    --output-template-file ${packaged} || exit 1
 
 stackname=${cdnName}-${env}
 
