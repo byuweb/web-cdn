@@ -83,7 +83,7 @@ exports.handler = function handler(event, context, callback) {
                     let version = Number(result.Version);
                     console.log('Published new version', version);
                     return {
-                        id: result.Configuration.FunctionArn,
+                        id: result.FunctionArn,
                         attributes: {
                             Version: version,
                             VersionArn: arn + ':' + version
