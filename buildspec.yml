@@ -26,5 +26,5 @@ phases:
 
 cache:
   paths:
-    - /var/cache/apt/archives/**/*
+    - /var/cache/apt/**/*
     - /root/.cache/**/*
