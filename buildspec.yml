@@ -12,8 +12,8 @@ phases:
     commands:
       - chmod a+x .codebuild/setup.sh && .codebuild/setup.sh
       - pip install awscli --upgrade --user
-      - ll /root/
-      - ll /root/.cache/
+      - ls -l /root/
+      - ls -l /root/.cache/
   pre_build:
     commands:
       - lerna bootstrap

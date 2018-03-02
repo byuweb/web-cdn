@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Installing Nodejs and Yarn"
+echo "Installing Nodejs, Yarn, jq, and yq"
 
 apt-get update -q
 apt-get install -yq apt-transport-https
@@ -10,7 +10,9 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.lis
 
 curl -sL https://deb.nodesource.com/setup_8.x | bash -
 
-apt-get update -q && apt-get install -yq nodejs yarn
+apt-get update -q && apt-get install -yq nodejs yarn jq
+
+pip install yq
 
 echo "Installing lerna"
 
