@@ -275,7 +275,7 @@ Resources:
   AliasResolverFunc:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${CDNName}-alias-resolver-${Environment}"
+      FunctionName: !Sub "${CDNName}-edge-alias-resolver-${Environment}"
       CodeUri: ./../packages/alias-resolver-lambda/
       Handler: index.handler
       Runtime: nodejs6.10
