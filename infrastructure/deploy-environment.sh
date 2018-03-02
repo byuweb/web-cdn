@@ -34,7 +34,7 @@ echo "computing alias resolver shasum"
 alias_resolver_hash=`find packages/alias-resolver-lambda infrastructure/custom-resources/version-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
 echo "Alias resolver hash is $alias_resolver_hash"
 
-stagingBucket=`getStackOutput ${accountStack} CfnStagingBucket`
+stagingBucket=`getStackOutput ${accountStack} CfnStagingBucketName`
 
 packaged=/tmp/cdn-packaged-infrastructure-$now.yml
 
