@@ -25,7 +25,7 @@ Parameters:
   CertificateArn:
     Type: String
     Description: ARN of the ACM certificate to be used for HTTPS. This cert should cover the root DNS zone, as well as 'webhooks.' and 'metrics.' subdomains.
-    AllowedPattern: "^arn:aws:acm:us-east-1:"
+    AllowedPattern: "^arn:aws:acm:us-east-1:\\d+:certificate/.*$"
     ConstraintDescription: "The value must be a valid ARN of an ACM certificate in the us-east-1 region."
   ConfigurationGithubRepo:
     Type: String
