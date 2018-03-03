@@ -26,7 +26,7 @@ const path = require('path');
 
 const os = require('os');
 
-const ssm = new aws.SSM({region: 'us-west-2'});
+const ssm = new aws.SSM();
 
 const log = require('winston');
 

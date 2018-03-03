@@ -11,6 +11,17 @@ Resources:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${CDNName}-assembler"
+      RepositoryPolicyText:
+        Version: "2008-10-17"
+        Statement:
+          - Sid: "AllowCodebuildPull"
+            Effect: "Allow"
+            Principal:
+              Service: "codebuild.amazonaws.com"
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
       LifecyclePolicy:
         LifecyclePolicyText: |
           {
@@ -29,6 +40,7 @@ Resources:
               }
             ]
           }
+
 
   CfnStagingBucket:
     Type: AWS::S3::Bucket
