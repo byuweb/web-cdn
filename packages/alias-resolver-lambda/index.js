@@ -96,8 +96,8 @@ exports.handler = (event, context, callback) => {
     }
 };
 
-const S3_WEBSITE_HOST = 's3-website-us-west-2.amazonaws.com';
-const S3_SECURE_HOST = 's3.dualstack.us-west-2.amazonaws.com';
+const S3_WEBSITE_HOST = 's3-website-us-east-1.amazonaws.com';
+const S3_SECURE_HOST = 's3.dualstack.us-east-1.amazonaws.com';
 
 function resolveHostName(host) {
     if (host.includes(S3_WEBSITE_HOST)) {
