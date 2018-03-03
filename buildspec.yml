@@ -5,7 +5,7 @@ env:
     CDN_NAME: web-community-cdn
     ACCOUNT_STACK_NAME: web-community-cdn-account
     CONFIG_REPO: byuweb/web-cdn
-    EXTRA_TAGS: data-sensitivity=public team="BYU Web Community" if-questions-contact="Joseph Moore + James Spiers + Katria Lesser"
+    EXTRA_TAGS: "data-sensitivity=public team=\"BYU Web Community\" if-questions-contact=\"Joseph Moore + James Spiers + Katria Lesser\""
 
 phases:
   install:
