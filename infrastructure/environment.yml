@@ -243,12 +243,12 @@ Resources:
             LambdaFunctionARN: !GetAtt AliasResolverVersion.VersionArn
         Logging:
           Bucket:
-            Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucket"
+            Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucketDomain"
           Prefix:
             Fn::Sub:
               - "${Logs}/${Env}/${DNS}"
               - Logs:
-                  Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucket"
+                  Fn::ImportValue: !Sub "${AccountStackName}-InfraBucketLogsPrefix"
                 Env: !Ref Environment
                 DNS: !Ref RootDNS
         DefaultRootObject: index.html

@@ -424,6 +424,11 @@ Outputs:
     Value: !Ref AccountBucket
     Export:
       Name: !Sub "${AWS::StackName}-InfraAndLogBucket"
+  AccountBucketDomainName:
+    Description: Account infra bucket name
+    Value: !GetAtt AccountBucket.DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-InfraAndLogBucketDomain"
   AccountBucketLogsPrefix:
     Description: Prefix for logs in account bucket
     Value: !FindInMap [ Prefixes, infra-bucket, logs ]
