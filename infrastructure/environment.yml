@@ -219,7 +219,7 @@ Resources:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
-        Comment: !Sub "${CDNName} ${Environment}"
+        Comment: !Sub "${RootDNS} - ${CDNName} ${Environment}"
         Aliases:
          - !Ref RootDNS
         Enabled: 'true'
