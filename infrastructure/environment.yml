@@ -241,6 +241,17 @@ Resources:
           LambdaFunctionAssociations:
           - EventType: origin-request
             LambdaFunctionARN: !GetAtt AliasResolverVersion.VersionArn
+        Logging:
+          Bucket:
+            Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucket"
+          Prefix:
+            Fn::Sub:
+              - "${Logs}/${Env}/${DNS}"
+              - Logs:
+                  Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucket"
+                Env: !Ref Environment
+                DNS: !Ref DNSRoot
+
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
         IPV6Enabled: true

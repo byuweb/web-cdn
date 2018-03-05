@@ -6,6 +6,11 @@ Parameters:
     Type: String
     Description: "A name for this particular CDN. Must be unique, though different 'Environment' values can share the same name."
     AllowedPattern: "^[a-zA-Z0-9\\-_]*$"
+Mappings:
+  Prefixes:
+    infra-bucket:
+      cloudformation: packaged-cfn
+      logs: logs
 Resources:
   AssemblerRepository:
     Type: AWS::ECR::Repository
@@ -41,20 +46,30 @@ Resources:
             ]
           }
 
-
-  CfnStagingBucket:
+  AccountBucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
-      BucketName: !Sub "${CDNName}-cfn-staging-${AWS::Region}-${AWS::AccountId}"
+      BucketName: !Sub "${CDNName}-infra-and-logs-${AWS::Region}-${AWS::AccountId}"
       LifecycleConfiguration:
         Rules:
-        - Id: ExpireOldResources
-          ExpirationInDays: 60
+        - Id: ExpireOldCfn
+          Prefix: !FindInMap [ Prefixes, infra-bucket, cloudformation ]
+          ExpirationInDays: 30
           Status: Enabled
+        - Id: ExpireOldLogs
+          Prefix: !FindInMap [ Prefixes, infra-bucket, logs ]
+          ExpirationInDays: 365
+          Status: Enabled
+        - Id: OldLogsToInfrequentAccess
+          Prefix: !FindInMap [ Prefixes, infra-bucket, logs ]
+          Status: Enabled
+          Transitions:
+          - StorageClass: STANDARD_IA
+            TransitionInDays: 30
       Tags:
       - Key: Name
-        Value: !Sub "${CDNName} Cloudformation Staging Bucket"
+        Value: !Sub "${CDNName} Infrastructure/Logging Bucket"
 
   CdnBuilderRole:
     Type: AWS::IAM::Role
@@ -394,11 +409,21 @@ Outputs:
     Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AssemblerRepository}"
     Export:
       Name: !Sub "${AWS::StackName}-AssemblerRepositoryUri"
-  CfnStagingBucketName:
-    Description: Cloudformation staging bucket name
-    Value: !Ref CfnStagingBucket
+  AccountBucketName:
+    Description: Account infra bucket name
+    Value: !Ref AccountBucket
     Export:
-      Name: !Sub "${AWS::StackName}-CfnStagingBucket"
+      Name: !Sub "${AWS::StackName}-InfraAndLogBucket"
+  AccountBucketLogsPrefix:
+    Description: Prefix for logs in account bucket
+    Value: !FindInMap [ Prefixes, infra-bucket, logs ]
+    Export:
+      Name: !Sub "${AWS::StackName}-InfraBucketLogsPrefix"
+  AccountBucketCfnPrefix:
+    Description: Prefix for cloudformation in account bucket
+    Value: !FindInMap [ Prefixes, infra-bucket, cloudformation ]
+    Export:
+      Name: !Sub "${AWS::StackName}-InfraBucketCloudformationPrefix"
 
 
 

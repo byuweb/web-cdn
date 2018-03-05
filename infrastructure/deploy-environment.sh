@@ -34,7 +34,8 @@ echo "computing alias resolver shasum"
 alias_resolver_hash=`find packages/alias-resolver-lambda infrastructure/custom-resources/version-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
 echo "Alias resolver hash is $alias_resolver_hash"
 
-stagingBucket=`getStackOutput ${accountStack} CfnStagingBucketName`
+stagingBucket=`getStackOutput ${accountStack} AccountBucketName`
+stagingBucketPrefix=`getStackOutput ${accountStack} AccountBucketCfnPrefix`
 
 packaged=/tmp/cdn-packaged-infrastructure-$now.yml
 
@@ -45,11 +46,12 @@ cd ${working}
 aws cloudformation validate-template \
     --template-body file://${here}/environment.yml || exit 1
 
-echo Packaging to s3://${stagingBucket}
+echo Packaging to s3://${stagingBucket}/${stagingBucketPrefix}
 
 aws cloudformation package \
     --template-file ${here}/environment.yml \
     --s3-bucket ${stagingBucket} \
+    --s3-prefix ${stagingBucketPrefix} \
     --output-template-file ${packaged} || exit 1
 
 stackname=${cdnName}-${env}
