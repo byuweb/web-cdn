@@ -250,7 +250,7 @@ Resources:
               - Logs:
                   Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucket"
                 Env: !Ref Environment
-                DNS: !Ref DNSRoot
+                DNS: !Ref RootDNS
 
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
