@@ -41,6 +41,8 @@ libraries:
     source: github:byuweb/web-cdn-site
   byu-faculty-directory:
     source: github:byuweb/byu-faculty-directory
+  theme-fonts:
+    source: github:byuweb/hoefler-fonts
 
 infrastructure:
   environments:
