@@ -192,23 +192,6 @@ Resources:
                   - 'lambda:UpdateAlias'
                 Resource:
                   - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CDNName}-*"
-        - PolicyName: AllowPassRole
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'iam:GetRole'
-                  - 'iam:PassRole'
-                Resource:
-                  - !Sub "arn:aws:iam::*:role/${CDNName}/*"
-              # Deny the ability to pass the all-powerful cloudformation role
-              - Effect: Deny
-                Action:
-                  - 'iam:PassRole'
-                Resource:
-                  - !GetAtt CloudformationDeploymentRole.Arn
-
 
   CloudformationDeploymentRole:
     Type: 'AWS::IAM::Role'
