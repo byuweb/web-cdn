@@ -18,6 +18,7 @@ pipelines:
           ENV: prod
           ROOT_DNS: cdn.byu.edu
           CONFIG_BRANCH: master
+          CERTIFICATE_ARN: arn:aws:acm:us-east-1:427927161742:certificate/2baac981-4646-464d-a879-a1576fbc30ef
         build_role: web-community-cdn-cfn-deploy
         cache: s3
       - type: slack_notify
@@ -38,6 +39,7 @@ pipelines:
           ENV: stg
           ROOT_DNS: beta.cdn.byu.edu
           CONFIG_BRANCH: beta
+          CERTIFICATE_ARN: arn:aws:acm:us-east-1:818272543125:certificate/292aa116-e65f-4121-8e40-bee4fefa5fa4
         build_role: web-community-cdn-cfn-deploy
         cache: s3
       - type: slack_notify
