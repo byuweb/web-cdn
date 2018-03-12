@@ -141,5 +141,5 @@ async function setupGithubCredentials(credentials, env) {
         actual = await loadGithubCredentials(env);
     }
 
-    GithubProvider.setCredentials(actual.user, actual.token);
+    await GithubProvider.setCredentials(actual.user, actual.token);
 }
