@@ -70,6 +70,7 @@ module.exports = class GithubProvider {
 
 
     async listRefs() {
+        log.debug(`Listing refs for ${this.source}`);
         let client = graphql('https://api.github.com/graphql', {
             asJSON: true,
             headers: await http.headers(),
@@ -101,6 +102,8 @@ module.exports = class GithubProvider {
                 }
               }
             }`, {});
+
+        log.debug('Refs response:', result);
 
         let me = this;
 
