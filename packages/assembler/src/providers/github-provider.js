@@ -103,7 +103,7 @@ module.exports = class GithubProvider {
               }
             }`, {});
 
-        log.debug('Refs response:', result);
+        log.debug(`Refs response for ${this.source}:`, JSON.stringify(result));
 
         let me = this;
 
