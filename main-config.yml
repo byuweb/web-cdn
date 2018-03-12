@@ -43,6 +43,8 @@ libraries:
     source: github:byuweb/byu-faculty-directory
   theme-fonts:
     source: github:byuweb/hoefler-fonts
+  byu-random-content:
+    source: github:byuweb/byu-random-content
 
 infrastructure:
   environments:
