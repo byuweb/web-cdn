@@ -59,7 +59,7 @@ module.exports = async function buildFilesystemMeta(manifest, assembledDir) {
                 resources
             };
 
-            await fs.writeJson(path.join(verDir, '.version-manifest.json'), versionManifest, {spaces: 2});
+            await fs.writeJson(path.join(verDir, '.cdn-meta', 'version-manifest.json'), versionManifest, {spaces: 2});
         }
     });
 };

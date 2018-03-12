@@ -213,6 +213,8 @@ function extractAliases(manifest) {
     }, {});
 }
 
+const JSON_PATTERN = /\.json$/;
+
 async function syncDir(bucket, local, prefix, metadata, cacheControl, dryRun) {
     log.info(`Syncing ${local} to ${prefix}`);
     if (dryRun) {
@@ -223,6 +225,9 @@ async function syncDir(bucket, local, prefix, metadata, cacheControl, dryRun) {
     if (metadata) {
         args.push('--metadata');
         args.push(`${JSON.stringify(metadata)}`);
+    }
+    if (JSON_PATTERN.test(local)) {
+        args.push('--content-type', 'application/json');
     }
     if (cacheControl) {
         args.push('--cache-control', cacheControl)
