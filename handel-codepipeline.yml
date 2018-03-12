@@ -16,7 +16,7 @@ pipelines:
         build_image: aws/codebuild/docker:17.09.0
         environment_variables:
           ENV: prod
-          ROOT_DNS: next.cdn.byu.edu
+          ROOT_DNS: cdn.byu.edu
           CONFIG_BRANCH: master
           CERTIFICATE_ARN: arn:aws:acm:us-east-1:427927161742:certificate/2baac981-4646-464d-a879-a1576fbc30ef
         build_role: web-community-cdn-cfn-deploy
