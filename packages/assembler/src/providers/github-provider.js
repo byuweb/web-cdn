@@ -161,7 +161,7 @@ module.exports = class GithubProvider {
         log.info(`Downloading ${this.source}@${ref} to ${destination} using git`);
 
         try {
-            await runCommand('git clone ' + this.source, 'git', ['clone', '--branch', ref, '--depth', '1', `https://${ghUser}:${ghToken}@github.com/${this.owner}/${this.repo}.git`, destination, '']);
+            await runCommand('git clone ' + this.source, 'git', ['clone', '--branch', ref, '--depth', '1', `https://${ghUser}:${ghToken}@github.com/${this.owner}/${this.repo}.git`, destination]);
         } catch (err) {
             log.error(`Error getting ${this.source}@${ref} via git`, err);
             throw err;
