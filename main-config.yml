@@ -8,10 +8,17 @@ libraries:
     source: github:byuweb/byu-theme-components
   byu-card:
     source: github:byuweb/byu-card
+  byu-calendar-components:
+    source: github:byuweb/byu-calendar-components
+
+# deprecated in favor of byu-calendar-components -included only for backwards compatibility
   byu-calendar-row:
     source: github:byuweb/byu-calendar-row
+
+# deprecated in favor of byu-calendar-components -included only for backwards compatibility
   byu-calendar-tile:
     source: github:byuweb/byu-calendar-tile
+
   web-component-polyfills:
     source: github:byuweb/web-component-polyfills
 #    source: npm:@webcomponents/webcomponentsjs
