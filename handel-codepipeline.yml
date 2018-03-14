@@ -24,7 +24,7 @@ pipelines:
       - type: slack_notify
         name: Notify
         message: "Prod CDN Assembler Build Finished"
-        channel: "@josephmoore"
+        channel: "@jmooreoa"
   beta:
     phases:
       - type: github
@@ -45,7 +45,7 @@ pipelines:
       - type: slack_notify
         name: Notify
         message: "Beta CDN Assembler Build Finished"
-        channel: "@josephmoore"
+        channel: "@jmooreoa"
   dev:
     phases:
       - type: github
@@ -66,5 +66,5 @@ pipelines:
       - type: slack_notify
         name: Notify
         message: "Dev CDN Assembler Build Finished"
-        channel: "@josephmoore"
+        channel: "@jmooreoa"
 

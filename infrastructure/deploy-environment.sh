@@ -56,6 +56,8 @@ aws cloudformation package \
 
 stackname=${cdnName}-${env}
 
+echo "extra tags: ${extraTags}"
+
 tags="app=${cdnName} env=${env} ${extraTags}"
 parameters="CDNName=${cdnName}
  Environment=${env}
