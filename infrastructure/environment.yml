@@ -289,8 +289,8 @@ Resources:
       CodeUri: ./../packages/alias-resolver-lambda/
       Handler: index.handler
       Runtime: nodejs6.10
-      MemorySize: 128
-      Timeout: 3
+      MemorySize: 512
+      Timeout: 20
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
 
