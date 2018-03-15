@@ -213,28 +213,38 @@ function extractAliases(manifest) {
     }, {});
 }
 
-const JSON_PATTERN = /\.json$/;
-
 async function syncDir(bucket, local, prefix, metadata, cacheControl, dryRun) {
     log.info(`Syncing ${local} to ${prefix}`);
     if (dryRun) {
         log.info('skipping (dry run)');
         return;
     }
-    let args = ['s3', 'sync', '--acl', 'public-read', '--delete'];
-    if (metadata) {
-        args.push('--metadata');
-        args.push(`${JSON.stringify(metadata)}`);
-    }
-    if (JSON_PATTERN.test(local)) {
-        args.push('--content-type', 'application/json');
-    }
-    if (cacheControl) {
-        args.push('--cache-control', cacheControl)
-    }
-    args.push(local, `s3://${bucket}/${prefix}`);
-    await runCommand(`upload-${prefix}`, 'aws', args);
-    log.info(`Finished syncing ${prefix}`)
+
+    return new Promise((resolve, reject) => {
+        const params = {
+            localDir: local,
+            deleteRemoved: true,
+            s3Params: {
+                Bucket: bucket,
+                Prefix: prefix,
+                Metadata: metadata,
+                CacheControl: cacheControl,
+                ACL: 'public-read',
+            },
+        };
+        const uploader = s3.uploadDir(params);
+        uploader.on('error', function (err) {
+            log.error("unable to sync:", err.stack);
+            reject(err);
+        });
+        uploader.on('progress', function () {
+            log.debug(`${prefix} progress`, uploader.progressAmount, uploader.progressTotal);
+        });
+        uploader.on('end', function () {
+            log.info(`Finished syncing ${prefix}`);
+            resolve();
+        });
+    });
 }
 
 async function deleteDir(bucket, prefix, dryRun) {
@@ -300,23 +310,23 @@ function cacheControlFor(libId, version) {
 }
 
 function computeRedirects(manifest) {
-   return Object.entries(manifest.libraries).reduce((redirects, [libId, lib]) => {
-       let aliasByVersion = invertMap(lib.aliases);
-       let libRedirects = lib.versions.filter(it => !!aliasByVersion[it.name])
-           .map(version => {
-               let versionPrefix = prefixFor(libId, version);
-               let versionAliases = aliasByVersion[version.name];
-               return versionAliases.map(alias => {
-                   return {
-                       from: `${libId}/${alias}/`,
-                       to: versionPrefix,
-                   }
-               });
-           }).reduce((array, each) => {
-            return array.concat(each);
-           }, []);
-       return libRedirects.concat(redirects);
-   }, []);
+    return Object.entries(manifest.libraries).reduce((redirects, [libId, lib]) => {
+        let aliasByVersion = invertMap(lib.aliases);
+        let libRedirects = lib.versions.filter(it => !!aliasByVersion[it.name])
+            .map(version => {
+                let versionPrefix = prefixFor(libId, version);
+                let versionAliases = aliasByVersion[version.name];
+                return versionAliases.map(alias => {
+                    return {
+                        from: `${libId}/${alias}/`,
+                        to: versionPrefix,
+                    }
+                });
+            }).reduce((array, each) => {
+                return array.concat(each);
+            }, []);
+        return libRedirects.concat(redirects);
+    }, []);
 }
 
 function invertMap(object) {

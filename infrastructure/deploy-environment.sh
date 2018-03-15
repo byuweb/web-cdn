@@ -91,3 +91,8 @@ buildproj=`getStackOutput ${stackname} BuildProject`
 echo "Running Assembler Build Project $buildproj@$configGithubBranch"
 
 aws codebuild start-build --project-name ${buildproj} --source-version ${configGithubBranch}
+
+echo "Pre-fetching cdn aliases list to warm lambdas"
+
+curl "https://${rootDns}/manifest.json"
+curl "https://${rootDns}/.cdn-meta/aliases.json"

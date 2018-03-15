@@ -4,4 +4,10 @@ echo "=========== Building alias-resolver-lambda ==========="
 
 set -e
 
-echo "No build required for alias-resolver-lambda"
+if [ -z "$ROOT_DNS" ]; then
+  echo "No ROOT_DNS value set; not generating config file";
+else
+  echo "Writing config file with rootDns = $ROOT_DNS";
+  echo "{\"rootDns\": \"$ROOT_DNS\"}" > ./config.json;
+fi
+
