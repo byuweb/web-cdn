@@ -32,7 +32,8 @@ module.exports = async function assembleManifest(mainConfig) {
     }));
 
     let libraries = {};
-    libs.forEach(([id, lib]) => libraries[id] = lib);
+    libs.sort(([id1, lib1], [id2, lib2]) => id1.localeCompare(id2))
+        .forEach(([id, lib]) => libraries[id] = lib);
 
     log.info('Finished assembling new manifest');
     return {
