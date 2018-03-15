@@ -25,6 +25,9 @@ const CACHE_TIME_USER = 3600;
 const CACHE_TIME_CACHE = 300;
 
 let oldAliases;
+let aliasCacheTime = 0;
+
+const MAX_ALIAS_CACHE_TIME_MILLIS = 60 * 1000;
 
 exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
@@ -113,11 +116,19 @@ function resolveHostName(host, canUseCloudfront) {
 function getAliasList(host) {
     let aliasConfigUrl = `https://${host}/.cdn-meta/aliases.json`;
 
+    if (Date.now() > aliasCacheTime + MAX_ALIAS_CACHE_TIME_MILLIS) {
+        console.log('Aliases are cached');
+        return Promise.resolve(oldAliases);
+    } else {
+        console.log('Cache has expired');
+    }
+
     console.log('Loading aliases from', aliasConfigUrl);
 
     return fetch(aliasConfigUrl).then(response => {
         let aliases = response.json();
         oldAliases = aliases;
+        aliasCacheTime = Date.now();
         return aliases;
     }).catch(err => {
         if (oldAliases) {
