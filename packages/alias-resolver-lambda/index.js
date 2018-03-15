@@ -92,6 +92,20 @@ exports.handler = (event, context, callback) => {
                     }],
                 }
             };
+            if (request.headers.origin) {
+                response.headers['access-control-allow-origin'] = [{
+                    key: 'Access-Control-Allow-Origin',
+                    value: '*'
+                }];
+                response.headers['access-control-allow-methods'] = [{
+                    key: 'Access-Control-Allow-Methods',
+                    value: 'GET, HEAD'
+                }];
+                response.headers['access-control-max-age'] = [{
+                    key: 'Access-Control-Max-Age',
+                    value: '86400'
+                }];
+            }
             callback(null, response);
         }).catch(err => {
             console.log('Got error', err);
@@ -116,7 +130,7 @@ function resolveHostName(host, canUseCloudfront) {
 function getAliasList(host) {
     let aliasConfigUrl = `https://${host}/.cdn-meta/aliases.json`;
 
-    if (Date.now() > aliasCacheTime + MAX_ALIAS_CACHE_TIME_MILLIS) {
+    if (oldAliases && Date.now() < aliasCacheTime + MAX_ALIAS_CACHE_TIME_MILLIS) {
         console.log('Aliases are cached');
         return Promise.resolve(oldAliases);
     } else {
