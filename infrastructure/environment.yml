@@ -39,10 +39,23 @@ Parameters:
     Default: fakesha
 
 Mappings:
-  CacheTTL:
+  NormalCacheTTL:
     prod:
-      default: 3600
-      max: 86400
+      default: 7200 # 2 hours
+      max: 86400 # 1 day
+      min: 60
+    stg:
+      default: 30
+      max: 60
+      min: 0
+    dev:
+      default: 30
+      max: 60
+      min: 0
+  AliasCacheTTL:
+    prod:
+      default: 600
+      max: 3600
       min: 0
     stg:
       default: 30
@@ -231,13 +244,49 @@ Resources:
           AllowedMethods: [GET, HEAD, OPTIONS]
           Compress: true
           ForwardedValues:
-            QueryString: 'true'
             Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
-          DefaultTTL: !FindInMap [ CacheTTL, !Ref Environment, default ]
-          MaxTTL: !FindInMap [ CacheTTL, !Ref Environment, max ]
-          MinTTL: !FindInMap [ CacheTTL, !Ref Environment, min ]
+          DefaultTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, default ]
+          MaxTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, max ]
+          MinTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, min ]
+        CacheBehaviors:
+        - PathPattern: '/*/latest/*'
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          ForwardedValues:
+            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
+          TargetOriginId: only-origin
+          ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
+          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
+          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
+          LambdaFunctionAssociations:
+          - EventType: origin-request
+            LambdaFunctionARN: !GetAtt AliasResolverVersion.VersionArn
+        - PathPattern: '/*/unstable/*'
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          ForwardedValues:
+            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
+          TargetOriginId: only-origin
+          ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
+          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
+          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
+          LambdaFunctionAssociations:
+          - EventType: origin-request
+            LambdaFunctionARN: !GetAtt AliasResolverVersion.VersionArn
+        - PathPattern: '/*/*.*.x/*'
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          ForwardedValues:
+            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
+          TargetOriginId: only-origin
+          ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
+          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
+          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
           LambdaFunctionAssociations:
           - EventType: origin-request
             LambdaFunctionARN: !GetAtt AliasResolverVersion.VersionArn
