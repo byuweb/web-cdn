@@ -232,7 +232,7 @@ Resources:
           Compress: true
           ForwardedValues:
             QueryString: 'true'
-            Headers: [Origin]
+            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
           DefaultTTL: !FindInMap [ CacheTTL, !Ref Environment, default ]
