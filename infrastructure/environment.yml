@@ -88,7 +88,7 @@ Resources:
           AllowedMethods: [GET]
           AllowedOrigins: ['*']
           ExposedHeaders: [Date]
-          MaxAge: '3600'
+          MaxAge: '86400'
       WebsiteConfiguration:
         IndexDocument: index.html
       VersioningConfiguration:
