@@ -52,6 +52,8 @@ libraries:
     source: github:byuweb/hoefler-fonts
   byu-random-content:
     source: github:byuweb/byu-random-content
+  browser-oauth-implicit:
+    source: github:byuweb/byu-browser-oauth-implicit
 
 infrastructure:
   environments:
