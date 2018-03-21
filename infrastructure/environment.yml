@@ -245,6 +245,7 @@ Resources:
           Compress: true
           ForwardedValues:
             Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
+            QueryString: false
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
           DefaultTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, default ]
@@ -256,6 +257,7 @@ Resources:
           Compress: true
           ForwardedValues:
             Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
+            QueryString: false
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
           DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
@@ -269,6 +271,7 @@ Resources:
           Compress: true
           ForwardedValues:
             Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
+            QueryString: false
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
           DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
@@ -282,6 +285,7 @@ Resources:
           Compress: true
           ForwardedValues:
             Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
+            QueryString: false
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
           DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
