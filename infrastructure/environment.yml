@@ -98,10 +98,9 @@ Resources:
         CorsRules:
         - Id: AllowAllGets
           AllowedHeaders: ['*']
-          AllowedMethods: [GET]
+          AllowedMethods: [GET, HEAD]
           AllowedOrigins: ['*']
-          ExposedHeaders: [Date]
-          MaxAge: '86400'
+          MaxAge: 86400
       WebsiteConfiguration:
         IndexDocument: index.html
       VersioningConfiguration:
