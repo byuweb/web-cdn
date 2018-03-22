@@ -54,6 +54,8 @@ libraries:
     source: github:byuweb/byu-random-content
   browser-oauth-implicit:
     source: github:byuweb/byu-browser-oauth-implicit
+  byu-user-info-oauth:
+    source: github:byuweb/byu-user-info-oauth
 
 infrastructure:
   environments:
