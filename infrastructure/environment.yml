@@ -110,7 +110,6 @@ Resources:
         - Id: ExpireOldVersions
           NoncurrentVersionExpirationInDays: 180
           Status: Enabled
-        Rules:
         - Id: RemoveOldBlobs
           Status: Enabled
           Prefix: '.cdn-meta/large-blobs/'
