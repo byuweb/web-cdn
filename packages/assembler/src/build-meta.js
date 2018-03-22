@@ -34,6 +34,8 @@ module.exports = async function buildFilesystemMeta(manifest, assembledDir) {
     return manifests.promiseLibraries(manifest, async function (id, lib) {
         let libDir = path.join(assembledDir, id);
 
+        const result = {};
+
         for (let ver of lib.versions) {
             let verDir = path.join(libDir, ver.name);
             try {
@@ -59,11 +61,15 @@ module.exports = async function buildFilesystemMeta(manifest, assembledDir) {
                 resources
             };
 
+            // TODO: Move this to the proper location (upload-files).
             const metaDir = path.join(verDir, '.cdn-meta');
 
             await fs.ensureDir(metaDir);
             await fs.writeJson(path.join(metaDir, 'version-manifest.json'), versionManifest, {spaces: 2});
+
+            result[ver.name] = versionManifest;
         }
+        return result;
     });
 };
 

@@ -36,27 +36,42 @@ const sets = require('./util/sets');
 const path = require('path');
 
 const log = require('winston');
+const fs = require('fs-extra');
+const mime = require('mime');
 
-module.exports = async function uploadFiles(oldManifest, newManifest, actions, bucket, assembledDir, cdnHost, dryRun) {
+const LARGE_FILE_LIMIT = 512000; //512 kB
+
+const LARGE_FILE_PREFIX = '.cdn-meta/large-blobs/';
+
+module.exports = async function uploadFiles(oldManifest, newManifest, versionManifests, actions, bucket, assembledDir, cdnHost, dryRun) {
     let sync = [];
     let invalidate = ['manifest.json'];
     let remove = [];
+    let syncLargeFile = [];
 
     Object.entries(actions).forEach(([libId, libActions]) => {
         let libDefn = newManifest.libraries[libId] || oldManifest.libraries[libId];
+        let libManifests = versionManifests[libId];
 
-        let syncActions = prepareLibSync(libId, libDefn, libActions, assembledDir);
+        let syncActions = prepareLibSync(libId, libDefn, libManifests, libActions, assembledDir);
 
         sync.push(...syncActions.sync);
+        syncLargeFile.push(...syncActions.syncLargeFile);
         invalidate.push(...syncActions.invalidate);
         remove.push(...syncActions.remove);
     });
+
+    log.info('Uploading large files');
+    const largeFileFollowUp = await uploadLargeFiles(bucket, assembledDir, syncLargeFile, dryRun);
 
     log.info('Starting Sync jobs:\n\t' + sync.map(each => each.to).join('\n\t'));
 
     await batch(sync, UPLOAD_PARALLELISM, each => {
         return syncDir(bucket, each.from, each.to, each.metadata, each.cacheControl, dryRun)
     });
+
+    log.info('Finishing large file uploads');
+    await copyLargeFiles(largeFileFollowUp, dryRun);
 
     log.info('Starting Remove jobs:\n\t' + remove.join('\n\t'));
     await batch(remove, UPLOAD_PARALLELISM, each => {
@@ -103,9 +118,10 @@ function versionPath(version) {
     return version.type === 'branch' ? `experimental/${version.name}` : version.name;
 }
 
-function prepareLibSync(libId, lib, actions, assembledDir) {
+function prepareLibSync(libId, lib, versionManifests, actions, assembledDir) {
     let syncActions = {
         sync: [],
+        syncLargeFile: [],
         invalidate: [],
         remove: [],
     };
@@ -120,16 +136,20 @@ function prepareLibSync(libId, lib, actions, assembledDir) {
 
     versionsToUpload.forEach(versionName => {
         let version = lib.versions.find(it => it.name === versionName);
+        let manifest = versionManifests[versionName];
 
         let assembled = path.join(assembledDir, libId, versionName);
 
         let prefix = prefixFor(libId, version);
 
+        const metadata = metadataFor(libId, version);
+        const cacheControl = cacheControlFor(libId, version);
+
         syncActions.sync.push({
             from: assembled,
             to: prefix,
-            metadata: metadataFor(libId, version),
-            cacheControl: cacheControlFor(libId, version)
+            metadata,
+            cacheControl
         });
 
         syncActions.invalidate.push(prefix + '*');
@@ -142,6 +162,21 @@ function prepareLibSync(libId, lib, actions, assembledDir) {
                 syncActions.invalidate.push(aliasPrefix + "*")
             });
         }
+
+        Object.entries(manifest.resources)
+            .filter(([key, it]) => it.size >= LARGE_FILE_LIMIT)
+            .map(([key, it]) => {
+                return {
+                    from: path.join(assembled, key),
+                    to: prefix + key,
+                    fileSha512: it.hashes.sha512.hex,
+                    metadata,
+                    cacheControl
+                };
+            })
+            .forEach(res => {
+                syncActions.syncLargeFile.push(res)
+            });
     });
 
     for (let version of actions.remove) {
@@ -151,6 +186,70 @@ function prepareLibSync(libId, lib, actions, assembledDir) {
     }
 
     return syncActions;
+}
+
+async function uploadLargeFiles(bucket, assembledDir, files, dryRun) {
+    log.info('Uploading large files');
+
+    const dir = path.join(assembledDir, '__large-blobs');
+    await fs.emptyDir(dir);
+
+    const copied = new Set();
+    for (const file of files) {
+        const sha = file.fileSha512;
+        if (copied.has(sha)) {
+            continue;
+        }
+
+        await fs.copy(file.from, path.join(dir, sha));
+
+        copied.add(sha);
+    }
+
+    const args = [
+        's3', 'sync',
+        dir, 's3://' + bucket + '/' + LARGE_FILE_PREFIX,
+        '--acl', 'private',
+        '--storage-class', 'REDUCED_REDUNDANCY'
+    ];
+    if (dryRun) {
+        args.push('--dryrun');
+    }
+
+    await runCommand('aws s3 sync large files', 'aws', args);
+
+    log.info('Deleting large files from assembled directories');
+
+    for (const file of files) {
+        log.debug('Deleting large file', file.from);
+        await fs.remove(file.from);
+    }
+
+    return files.map(file => {
+        return {
+            Bucket: bucket,
+            ACL: "public-read",
+            CacheControl: file.cacheControl,
+            ContentType: mime.getType(file.to),
+            CopySource: '/' + bucket + '/' + LARGE_FILE_PREFIX + file.fileSha512,
+            Key: file.to,
+            Metadata: file.metadata,
+        };
+    });
+}
+
+async function copyLargeFiles(copyParams, dryRun) {
+    if (dryRun) {
+        log.info('skipping large file copy (dry run)');
+        return;
+    }
+    await Promise.all(
+        copyParams.map(params =>
+            s3Client.copyObject(params).promise()
+                .then(() => log.debug('Finished copying large file', params.Key))
+        )
+    );
+    log.info('Done copying large files');
 }
 
 async function uploadManifest(bucket, manifest, dryRun) {

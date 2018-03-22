@@ -151,7 +151,7 @@ Resources:
         Auth:
           Type: OAUTH
         BuildSpec: buildspec-assembler.yml
-      TimeoutInMinutes: 10
+      TimeoutInMinutes: 20
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_MEDIUM

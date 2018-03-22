@@ -22,6 +22,7 @@ const log = require('winston');
 const yaml = require('node-yaml');
 const moment = require('moment-timezone');
 const runCommand = require('../util/run-command');
+const path = require('path');
 
 const graphql = require('graphql.js');
 
@@ -156,12 +157,22 @@ module.exports = class GithubProvider {
     }
 
     async downloadRef(ref, destination) {
-        await fs.emptyDir(destination);
+        const exists = await fs.pathExists(path.join(destination, '.git'));
+        if (exists) {
+            await fs.ensureDir(destination);
+        } else {
+            await fs.emptyDir(destination);
+        }
 
         log.info(`Downloading ${this.source}@${ref} to ${destination} using git`);
 
         try {
-            await runCommand('git clone ' + this.source, 'git', ['clone', '--branch', ref, '--depth', '1', `https://${ghUser}:${ghToken}@github.com/${this.owner}/${this.repo}.git`, destination]);
+            if (exists) {
+                // await runCommand('git fetch ' + this.source, 'git', ['fetch', 'origin', ref]);
+                // await runCommand('git rebase ' + this.source, 'git', ['pull']);
+            } else {
+                await runCommand('git clone ' + this.source, 'git', ['clone', '--branch', ref, '--depth', '1', `https://${ghUser}:${ghToken}@github.com/${this.owner}/${this.repo}.git`, destination]);
+            }
         } catch (err) {
             log.error(`Error getting ${this.source}@${ref} via git`, err);
             throw err;

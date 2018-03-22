@@ -47,7 +47,8 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
 
     log.info(`Using ${workDir} as scratch directory`);
 
-    await fs.emptyDir(workDir);
+    // await fs.emptyDir(workDir);
+    await fs.ensureDir(workDir);
 
     let sourceDir = path.join(workDir, 'sources');
     let assembledDir = path.join(workDir, 'assembled');
@@ -74,10 +75,10 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     await assembleArtifacts(newManifest, actions, sourceDirs, assembledDir);
 
     log.info("----- Building Library Meta Files -----");
-    await buildMeta(newManifest, assembledDir);
+    const versionManifests = await buildMeta(newManifest, assembledDir);
 
     log.info("----- Uploading Files -----");
-    await uploadFiles(oldManifest, newManifest, actions, targetBucket, assembledDir, opts.cdnHost, dryRun);
+    await uploadFiles(oldManifest, newManifest, versionManifests, actions, targetBucket, assembledDir, opts.cdnHost, dryRun);
 };
 
 async function getOldManifest(bucket) {

@@ -23,7 +23,8 @@ const sets = require('./util/sets');
 const providers = require('./providers');
 
 module.exports = async function downloadSources(manifest, actions, workdir) {
-    await fsp.emptyDir(workdir);
+    // await fsp.emptyDir(workdir);
+    await fsp.ensureDir(workdir);
 
     let result = {};
 
@@ -38,7 +39,8 @@ module.exports = async function downloadSources(manifest, actions, workdir) {
             return;
         }
 
-        await fsp.emptyDir(dir);
+        // await fsp.emptyDir(dir);
+        await fsp.ensureDir(dir);
 
         let provider = providers.getProvider(defn.source, defn.lib_config);
 
