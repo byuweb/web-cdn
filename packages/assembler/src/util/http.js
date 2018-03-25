@@ -21,6 +21,7 @@ const req = require('request');
 const reqp = require('request-promise-native');
 const fsp = require('fs-extra');
 const log = require('winston');
+const PQueue = require('p-queue');
 const constants = require('../constants');
 
 const defaultHeaders = {
@@ -30,8 +31,9 @@ const defaultHeaders = {
 
 class HttpClient {
 
-    constructor(headerProvider) {
+    constructor(headerProvider, concurrency) {
         this.headerProvider = headerProvider;
+        this.queue = new PQueue({concurrency});
     }
 
     async headers() {
@@ -42,26 +44,26 @@ class HttpClient {
     async get(uri) {
         log.debug(`Getting ${uri}`);
         let headers = await this.headers();
-        return reqp({
+        return this.queue.add(() => reqp({
             uri,
             headers
-        });
+        }));
     }
 
     async getJson(uri) {
         log.debug(`Getting JSON from ${uri}`);
         let headers = await this.headers();
-        return reqp({
+        return this.queue.add(() => reqp({
             uri,
             headers,
             json: true
-        });
+        }));
     }
 
     async stream(uri, destination) {
         log.debug(`Streaming content from ${uri} to ${destination}`);
         let headers = await this.headers();
-        return new Promise((resolve, reject) => {
+        return this.queue.add(() => new Promise((resolve, reject) => {
             let stream = fsp.createWriteStream(destination);
             req({uri, headers})
                 .on('error', reject)
@@ -70,12 +72,12 @@ class HttpClient {
                 log.debug(`Finished streaming ${uri}`);
                 resolve(destination);
             })
-        });
+        }));
     }
 }
 
 module.exports = function initClient(opts) {
-    let {headers = null} = opts || {};
+    let { headers = null, concurrency = 5 } = opts || {};
 
     let headerProvider = () => {};
     if (typeof headers === 'function') {
@@ -85,6 +87,6 @@ module.exports = function initClient(opts) {
         headerProvider = () => headers;
     }
 
-    return new HttpClient(headerProvider);
+    return new HttpClient(headerProvider, concurrency);
 };
 

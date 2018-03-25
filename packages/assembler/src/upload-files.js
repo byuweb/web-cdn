@@ -28,7 +28,9 @@ const s3Opts = {
 
 const os = require('os');
 
-const UPLOAD_PARALLELISM = os.cpus().length;
+const PQueue = require('p-queue');
+
+const uploadQueue = new PQueue({concurrency: os.cpus().length});
 
 const s3 = require('s3').createClient(s3Opts);
 const runCommand = require('./util/run-command');
@@ -39,7 +41,7 @@ const log = require('winston');
 const fs = require('fs-extra');
 const mime = require('mime');
 
-const LARGE_FILE_LIMIT = 512000; //512 kB
+const LARGE_FILE_LIMIT = 768000; //768 kB
 
 const LARGE_FILE_PREFIX = '.cdn-meta/large-blobs/';
 
@@ -66,7 +68,7 @@ module.exports = async function uploadFiles(oldManifest, newManifest, versionMan
 
     log.info('Starting Sync jobs:\n\t' + sync.map(each => each.to).join('\n\t'));
 
-    await batch(sync, UPLOAD_PARALLELISM, each => {
+    await batch(sync, each => {
         return syncDir(bucket, each.from, each.to, each.metadata, each.cacheControl, dryRun)
     });
 
@@ -74,7 +76,7 @@ module.exports = async function uploadFiles(oldManifest, newManifest, versionMan
     await copyLargeFiles(largeFileFollowUp, dryRun);
 
     log.info('Starting Remove jobs:\n\t' + remove.join('\n\t'));
-    await batch(remove, UPLOAD_PARALLELISM, each => {
+    await batch(remove, each => {
         return deleteDir(bucket, each, dryRun);
     });
 
@@ -91,23 +93,12 @@ module.exports = async function uploadFiles(oldManifest, newManifest, versionMan
     //TODO: add cloudfront invalidation
 };
 
-async function batch(items, parallelism, action) {
-    for (let chunk of chunkArray(items, parallelism)) {
-        await Promise.all(
-            chunk.map(action)
-        );
+async function batch(items, action) {
+    return uploadQueue.addAll(items.map(queuedAction));
+
+    function queuedAction(item) {
+        return () => action(item);
     }
-}
-
-function chunkArray(array, chunkSize) {
-    let result = [];
-
-    for (let i = 0; i < array.length; i += chunkSize) {
-        let chunk = array.slice(i, i + chunkSize);
-        result.push(chunk);
-    }
-
-    return result;
 }
 
 function prefixFor(libId, version) {
@@ -188,6 +179,18 @@ function prepareLibSync(libId, lib, versionManifests, actions, assembledDir) {
     return syncActions;
 }
 
+async function existsInS3(bucket, key) {
+    try {
+        await s3Client.headObject({
+            Bucket: bucket,
+            Key: key
+        }).promise();
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
 async function uploadLargeFiles(bucket, assembledDir, files, dryRun) {
     log.info('Uploading large files');
 
@@ -196,27 +199,26 @@ async function uploadLargeFiles(bucket, assembledDir, files, dryRun) {
 
     const copied = new Set();
     for (const file of files) {
+        log.debug('Copying', file.from);
         const sha = file.fileSha512;
         if (copied.has(sha)) {
+            log.debug('Already copied ' + file.from);
             continue;
         }
 
-        await fs.copy(file.from, path.join(dir, sha));
+        const s3Key = LARGE_FILE_PREFIX + sha;
+        if (existsInS3(s3Key)) {
+            log.debug(`${sha.substr(0, 10)}... already exists`);
+            copied.add(sha);
+        } else if (dryRun) {
+            log.info(`Would upload large file ${sha.substr(0, 10)}... from ${file.from}`);
+        } else {
+            log.info(`Uploading large file ${sha.substr(0, 10)}... from ${file.from}`);
+            await uploadFile(bucket, file.from, s3Key);
+        }
 
         copied.add(sha);
     }
-
-    const args = [
-        's3', 'sync',
-        dir, 's3://' + bucket + '/' + LARGE_FILE_PREFIX,
-        '--acl', 'private',
-        '--storage-class', 'REDUCED_REDUNDANCY'
-    ];
-    if (dryRun) {
-        args.push('--dryrun');
-    }
-
-    await runCommand('aws s3 sync large files', 'aws', args);
 
     log.info('Deleting large files from assembled directories');
 
@@ -297,6 +299,24 @@ async function uploadMetadataFiles(bucket, manifest, cdnHost, dryRun) {
     log.info('Finished uploading metadata');
 }
 
+async function uploadFile(bucket, localFile, s3Key) {
+    return new Promise((resolve, reject) => {
+        const uploader = s3.uploadFile({
+            localFile,
+            s3Params: {
+                Bucket: bucket,
+                Key: s3Key,
+            },
+        });
+        uploader.on('error', function (err) {
+            reject(err);
+        });
+        uploader.on('end', function () {
+            resolve();
+        });
+    });
+}
+
 function extractAliases(manifest) {
     return Object.entries(manifest.libraries).reduce((result, [libId, lib]) => {
         result[libId] = Object.entries(lib.aliases).reduce((acc, [alias, versionName]) => {
@@ -336,8 +356,8 @@ async function syncDir(bucket, local, prefix, metadata, cacheControl, dryRun) {
             log.error("unable to sync:", err.stack);
             reject(err);
         });
-        uploader.on('progress', function () {
-            log.debug(`${prefix} progress`, uploader.progressAmount, uploader.progressTotal);
+        uploader.on('fileUploadEnd', function (localPath, s3Key) {
+            log.debug(`Finished uploading ${s3Key}`);
         });
         uploader.on('end', function () {
             log.info(`Finished syncing ${prefix}`);

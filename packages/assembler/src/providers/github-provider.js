@@ -38,7 +38,8 @@ function clientHeaders() {
 }
 
 const http = httpFactory({
-    headers: clientHeaders
+    concurrency: 2, // Github has pretty strict abuse limits. Let's not trigger them with too much concurrency.
+    headers: clientHeaders,
 });
 
 const fs = require('fs-extra');
