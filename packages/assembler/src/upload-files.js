@@ -194,9 +194,6 @@ async function existsInS3(bucket, key) {
 async function uploadLargeFiles(bucket, assembledDir, files, dryRun) {
     log.info('Uploading large files');
 
-    const dir = path.join(assembledDir, '__large-blobs');
-    await fs.emptyDir(dir);
-
     const copied = new Set();
     for (const file of files) {
         log.debug('Copying', file.from);
@@ -214,7 +211,7 @@ async function uploadLargeFiles(bucket, assembledDir, files, dryRun) {
             log.info(`Would upload large file ${sha.substr(0, 10)}... from ${file.from}`);
         } else {
             log.info(`Uploading large file ${sha.substr(0, 10)}... from ${file.from}`);
-            await uploadFile(bucket, file.from, s3Key);
+            await uploadLargeFile(bucket, file.from, s3Key);
         }
 
         copied.add(sha);
@@ -303,22 +300,15 @@ async function uploadMetadataFiles(bucket, manifest, cdnHost, dryRun) {
     log.info('Finished uploading metadata');
 }
 
-async function uploadFile(bucket, localFile, s3Key) {
-    return new Promise((resolve, reject) => {
-        const uploader = s3.uploadFile({
-            localFile,
-            s3Params: {
-                Bucket: bucket,
-                Key: s3Key,
-            },
-        });
-        uploader.on('error', function (err) {
-            reject(err);
-        });
-        uploader.on('end', function () {
-            resolve();
-        });
-    });
+async function uploadLargeFile(bucket, localFile, s3Key) {
+    await runCommand('S3 Upload File', 'aws', [
+        's3',
+        'cp',
+        localFile,
+        `s3://${bucket}/${s3Key}`,
+        '--content-type', mime.getType(path.parse(localFile).ext),
+        '--acl', 'private',
+    ]);
 }
 
 function extractAliases(manifest) {
