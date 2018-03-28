@@ -207,7 +207,7 @@ async function uploadLargeFiles(bucket, assembledDir, files, dryRun) {
         }
 
         const s3Key = LARGE_FILE_PREFIX + sha;
-        if (existsInS3(s3Key)) {
+        if (await existsInS3(bucket, s3Key)) {
             log.debug(`${sha.substr(0, 10)}... already exists`);
             copied.add(sha);
         } else if (dryRun) {
