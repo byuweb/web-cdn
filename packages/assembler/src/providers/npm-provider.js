@@ -99,7 +99,7 @@ module.exports = class NpmProvider {
         return getVersionConfig(this.config, npmData, ref);
     }
 
-    fetchLinks(config) {
+    async fetchLinks(config) {
         return {
             source: `https://www.npmjs.com/package/${this.name}`,
             issues: `https://www.npmjs.com/package/${this.name}`,

@@ -70,7 +70,6 @@ module.exports = class GithubProvider {
         this.baseUri = `https://api.github.com/repos/${owner}/${repo}`;
     }
 
-
     async listRefs() {
         log.debug(`Listing refs for ${this.source}`);
         let client = graphql('https://api.github.com/graphql', {
@@ -145,11 +144,15 @@ module.exports = class GithubProvider {
         return yaml.parse(Buffer.from(cfg.content, cfg.encoding));
     }
 
-    fetchLinks(config) {
+    async fetchLinks(config) {
+        const readme = await http.getJson(`${this.baseUri}/readme`);
+        const readmeDownloadUrl = readme.download_url;
+
         return {
             source: `https://github.com/${this.owner}/${this.repo}`,
             issues: `https://github.com/${this.owner}/${this.repo}/issues`,
             docs: config.docs,
+            readme: readmeDownloadUrl,
         };
     }
 

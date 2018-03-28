@@ -1,13 +1,33 @@
 ---
 name: User-Readable Name Here
 description: User-readable description here
+type: javascript # Available types: web-component, javascript, stylesheet, font, images, unknown, other
 resources: # Resources tells the CDN which files to include.  You can use globs to include entire directories.
   - 'my-file.js'  #This is just a file name/glob.  It'll be copied as-is
 
   - src: dist/**  #This object, using src: and dest: , defines files that we want to move from one location to another.
     dest: ./      # In this example, some build process puts files in 'dist', but we want to move them to the root directory
-entrypoints:  #entrypoints tells the CDN which files the users will be interested in using. This might go away.
-  bootstrap.js: 'Examines browser support and downloads the appropriate component bundle'
+basic_usage:
+  head:
+    meta:
+    - name: viewport
+      content: 'width=device-width, initial-scale=1.0'
+    preload:
+    styles:
+    - https://cloud.typography.com/75214/6517752/css/fonts.css
+    - byu-theme-components.min.css
+    scripts:
+    - src: byu-theme-components.min.js
+      async: true
+  body: >
+    <byu-header>
+      <h1 slot="site-title">Your Site Title Here</h1>
+    </byu-header>
+    <div>
+      Content Goes Here
+    </div>
+    <byu-footer></byu-footer>
+show_in_directory: false #defaults to true
 docs: https://github.com/byuweb/2017-components #This is a URL to documentation about how to use the library
 #build: inferred
 build:

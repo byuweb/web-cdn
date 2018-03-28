@@ -59,9 +59,10 @@ async function loadLib(id, defn) {
         source: defn.source,
         name: mainConfig.name,
         description: mainConfig.description,
+        type: mainConfig.type || 'unknown',
         aliases: aliases(refs.map(it => it.name)),
         versions: refs,
-        links: provider.fetchLinks(mainConfig),
+        links: await provider.fetchLinks(mainConfig),
     };
 
     if (defn.configuration) {
