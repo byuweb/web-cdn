@@ -142,6 +142,59 @@ Resources:
               - s3:*
             Resource: !Sub "arn:aws:s3:::${ContentBucket}/*"
 
+  CdnContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Sub "${CDNName}-${Environment}-contents-${AWS::Region}-${AWS::AccountId}"
+      CorsConfiguration:
+        CorsRules:
+        - Id: AllowAllGets
+          AllowedHeaders: ['*']
+          AllowedMethods: [GET, HEAD]
+          AllowedOrigins: ['*']
+          MaxAge: 86400
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireOldVersions
+          NoncurrentVersionExpirationInDays: 180
+          Status: Enabled
+        - Id: RemoveOldBlobs
+          Status: Enabled
+          Prefix: '.cdn-meta/large-blobs/'
+          ExpirationInDays: 60
+      Tags:
+      - Key: Name
+        Value: !Sub "${CDNName} ${Environment} Contents"
+
+  CdnContentBucketAllowBuilderUpdates:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CdnContentBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${AccountStackName}-BuilderRole"
+            Action:
+              - s3:ListBucket
+              - s3:PutBucketWebsite
+              - s3:Get*
+            Resource: !Sub "arn:aws:s3:::${CdnContentBucket}"
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${AccountStackName}-BuilderRole"
+            Action:
+              - s3:*
+            Resource: !Sub "arn:aws:s3:::${CdnContentBucket}/*"
+
   CdnBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -165,7 +218,7 @@ Resources:
               Fn::ImportValue: !Sub "${AccountStackName}-AssemblerRepositoryUri"
         EnvironmentVariables:
           - Name: DESTINATION_S3_BUCKET
-            Value: !Ref ContentBucket
+            Value: !Ref CdnContentBucket
           - Name: BUILD_ENV
             Value: !Ref Environment
           - Name: CDN_HOST
@@ -371,7 +424,7 @@ Resources:
 
 Outputs:
   ContentBucket:
-    Value: !Ref ContentBucket
+    Value: !Ref CdnContentBucket
   BuildProject:
     Value: !Ref CdnBuildProject
   Cloudfront:
