@@ -249,6 +249,10 @@ async function copyLargeFiles(copyParams, dryRun) {
         copyParams.map(params =>
             s3Client.copyObject(params).promise()
                 .then(() => log.debug('Finished copying large file', params.Key))
+                .catch(err => {
+                    log.error('Error copying', params.CopySource, 'to', params.Key);
+                    throw err;
+                })
         )
     );
     log.info('Done copying large files');
