@@ -365,7 +365,7 @@ Resources:
         IPV6Enabled: true
         Origins:
         - Id: only-origin
-          DomainName: !Select [ 1, !Split [ "://", !GetAtt ContentBucket.WebsiteURL ] ]
+          DomainName: !Select [ 1, !Split [ "://", !GetAtt CdnContentBucket.WebsiteURL ] ]
           CustomOriginConfig:
             HTTPPort: 80
             HTTPSPort: 443
