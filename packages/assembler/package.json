@@ -19,6 +19,7 @@
     "aws-sdk": "^2.89.0",
     "chai-fs": "^1.0.0",
     "child-process-promise": "^2.2.1",
+    "common-tags": "^1.7.2",
     "cpx": "^1.5.0",
     "cross-spawn": "^5.1.0",
     "decompress": "^4.2.0",

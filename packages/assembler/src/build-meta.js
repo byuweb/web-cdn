@@ -95,4 +95,70 @@ function hashesFor(content, algos) {
     }, {});
 }
 
+/*
+   resourceGroups() {
+      const groups = {};
+
+      const resources = this.resources;
+
+      for (const [id, res] of Object.entries(resources)) {
+        const variant = getVariant(id);
+        if (!variant) {
+          const group = (groups[id] = groups[id] || {
+            variants: []
+          });
+          group.baseFile = res;
+          continue;
+        }
+        const { parent, details } = variant;
+        const group = (groups[parent] = groups[parent] || {
+          baseFile: null,
+          variants: []
+        });
+
+        group.variants.push({
+          variant: details,
+          info: res
+        });
+      }
+
+      return groups;
+    }
+  }
+  //   mounted() {
+  //       window.scrollTo(0, 0);
+  //   },
+};
+
+const FILE_VARIANTS = [
+  {
+    id: "min",
+    display: "Minified File",
+    pattern: /\.min\.([a-z]+)$/
+  },
+  {
+    id: "min-sourcemap",
+    display: "Minified Source Map",
+    pattern: /\.min\.([a-z]+).map$/
+  },
+  {
+    id: "sourcemap",
+    display: "Source Map",
+    pattern: /\.([a-z]+)\.map$/
+  }
+];
+
+function getVariant(file) {
+  const variant = FILE_VARIANTS.find(v => v.pattern.test(file));
+  if (!variant) {
+    return null;
+  }
+  const parent = file.replace(variant.pattern, "") + "." + file.match(variant.pattern)[1];
+
+  return {
+    parent,
+    details: variant
+  };
+}
+ */
 

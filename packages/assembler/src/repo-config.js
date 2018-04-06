@@ -19,9 +19,11 @@
 
 const type = require('type-detect');
 
-exports.normalize = function normalize(config) {
-    config.resources = normalizeResources(config.resources);
-    return config;
+exports.normalize = function normalize(config, baseConfig) {
+    const cfg = Object.assign({}, baseConfig, config);
+    cfg.resources = normalizeResources(cfg.resources);
+    delete cfg.entrypoints;
+    return cfg;
 };
 
 

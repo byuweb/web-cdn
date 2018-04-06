@@ -25,10 +25,14 @@ const repoConfig = require('./repo-config');
 const moment = require('moment-timezone');
 const log = require('winston');
 
-module.exports = async function assembleManifest(mainConfig) {
+const { URL } = require('url');
+
+const processBasicUsage = require('./util/basic-usage-processor');
+
+module.exports = async function assembleManifest(mainConfig, cdnHost) {
     log.info('Assembling new manifest from config:', JSON.stringify(mainConfig, null, 2));
     let libs = await Promise.all(Object.entries(mainConfig.libraries).map(async function ([id, defn]) {
-        return [id, await loadLib(id, defn)];
+        return [id, await loadLib(id, defn, cdnHost)];
     }));
 
     let libraries = {};
@@ -44,15 +48,27 @@ module.exports = async function assembleManifest(mainConfig) {
     };
 };
 
-async function loadLib(id, defn) {
+async function loadLib(id, defn, cdnHost) {
     log.debug(`Loading library ${id}`);
+    const cdnBase = 'https://' + cdnHost;
+
     let provider = providers.getProvider(defn.source, defn.configuration);
+
+    let mainConfig = Object.assign({show_in_directory: true}, defn.configuration, await provider.fetchMainConfig());
 
     let refs = await provider.listRefs();
 
-    refs.forEach(r => r.config = repoConfig.normalize(r.config));
+    const versions = await Promise.all(refs.map(ref => postProcessRef(id, defn, mainConfig, ref, cdnBase)));
 
-    let mainConfig = await provider.fetchMainConfig();
+    const deprecated = !!mainConfig.deprecated;
+    let deprecationMessage = undefined;
+    if (deprecated) {
+        if (typeof mainConfig.deprecated === 'string') {
+            deprecationMessage = mainConfig.deprecated;
+        } else {
+            deprecationMessage = 'This library has been deprecated';
+        }
+    }
 
     log.debug(`Finished library ${id}`);
     let libDefinition = {
@@ -60,9 +76,14 @@ async function loadLib(id, defn) {
         name: mainConfig.name,
         description: mainConfig.description,
         type: mainConfig.type || 'unknown',
-        aliases: aliases(refs.map(it => it.name)),
-        versions: refs,
+        aliases: aliases(versions.map(it => it.name)),
         links: await provider.fetchLinks(mainConfig),
+        show_in_directory: mainConfig.show_in_directory,
+        prerelease: mainConfig.prerelease,
+        deprecated: deprecated,
+        deprecation_message: deprecationMessage,
+        basic_usage: processBasicUsage(mainConfig.basic_usage, new URL(`/${id}/latest/`, cdnBase).toString()),
+        versions,
     };
 
     if (defn.configuration) {
@@ -70,5 +91,28 @@ async function loadLib(id, defn) {
     }
 
     return libDefinition;
+}
+
+async function postProcessRef(libId, libDefn, libConfig, ref, cdnBase) {
+    const path = `/${libId}/${versionPath(ref.name, ref.type)}/`;
+
+    const absoluteUrl = new URL(path, cdnBase).toString();
+
+    const result = Object.assign({}, ref, {
+        path,
+        config: repoConfig.normalize(ref.config, libDefn.configuration),
+        manifest_path: path + '.cdn-meta/version-manifest.json',
+    });
+
+    const basic_usage = processBasicUsage(ref.basic_usage, absoluteUrl);
+    if (basic_usage) {
+        result.basic_usage = basic_usage;
+    }
+
+    return result;
+}
+
+function versionPath(version, type) {
+    return type === 'branch' ? `experimental/${version}` : version;
 }
 

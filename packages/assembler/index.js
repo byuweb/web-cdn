@@ -56,7 +56,17 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     log.info("----- Getting current manifest -----");
     let oldManifest = await getOldManifest(targetBucket);
     log.info("----- Building new manifest -----");
-    let newManifest = await assembleManifest(config);
+    let newManifest = await assembleManifest(config, opts.cdnHost);
+
+    await fs.writeJson(path.join(workDir, 'manifest.json'), newManifest, {
+        spaces: 1,
+        replacer: (key, value) => {
+            if (key === 'config') {
+                return undefined;
+            }
+            return value;
+        }
+    });
 
     log.info("----- Planning Actions -----");
     let actions = planActions(oldManifest, newManifest, forceBuild);

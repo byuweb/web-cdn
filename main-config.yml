@@ -4,23 +4,62 @@ cdn:
 libraries:
   2017-core-components:
     source: github:byuweb/byu-theme-components
+    configuration:
+      type: 'web-component'
+      show_in_directory: false
+      deprecated: 'Please use byu-theme-components instead'
   byu-theme-components:
     source: github:byuweb/byu-theme-components
+    configuration:
+      type: 'web-component'
+      basic_usage:
+        head:
+          meta:
+          - name: viewport
+            content: 'width=device-width, initial-scale=1.0'
+          styles:
+          - https://cloud.typography.com/75214/6517752/css/fonts.css
+          - byu-theme-components.min.css
+          scripts:
+          - src: byu-theme-components.min.js
+            async: true
+        body: >
+          <byu-header>
+            <h1 slot="site-title">Your Site Title Here</h1>
+          </byu-header>
+          <div>
+            Content Goes Here
+          </div>
+          <byu-footer></byu-footer>
   byu-card:
     source: github:byuweb/byu-card
+    configuration:
+      type: 'web-component'
   byu-calendar-components:
     source: github:byuweb/byu-calendar-components
+    configuration:
+      type: 'web-component'
 
 # deprecated in favor of byu-calendar-components -included only for backwards compatibility
   byu-calendar-row:
     source: github:byuweb/byu-calendar-row
+    configuration:
+      type: 'web-component'
+      show_in_directory: false
+      deprecated: 'Please use byu-calendar-components instead'
 
 # deprecated in favor of byu-calendar-components -included only for backwards compatibility
   byu-calendar-tile:
     source: github:byuweb/byu-calendar-tile
+    configuration:
+      type: 'web-component'
+      show_in_directory: false
+      deprecated: 'Please use byu-calendar-components instead'
 
   web-component-polyfills:
     source: github:byuweb/web-component-polyfills
+    configuration:
+      type: 'javascript'
 #    source: npm:@webcomponents/webcomponentsjs
 #    configuration:
 #      versions:
@@ -34,30 +73,54 @@ libraries:
 #                  to: web-component-polyfills.min.js
 #                - regex: webcomponents-lite.js
 #                  to: web-component-polyfills.js
+
   shared-icons:
+    configuration:
+      type: 'images'
     source: github:byuweb/shared-icons
   byu-theme-style-helpers:
     source: github:byuweb/byu-theme-style-helpers
+    configuration:
+      type: 'stylesheet'
   byu-news-components:
     source: github:byuweb/byu-news-components
+    configuration:
+      type: 'web-component'
   byu-feature-card:
     source: github:byuweb/byu-feature-card-component
+    configuration:
+      type: 'web-component'
   byu-hero-banner:
     source: github:byuweb/byu-hero-banner
-#  cdn-site:
-#    source: github:byuweb/web-cdn-site
+    configuration:
+      type: 'web-component'
   byu-faculty-directory:
     source: github:byuweb/byu-faculty-directory
+    configuration:
+      type: 'web-component'
   theme-fonts:
     source: github:byuweb/hoefler-fonts
+    configuration:
+      type: 'font'
   byu-random-content:
     source: github:byuweb/byu-random-content
+    configuration:
+      type: 'web-component'
   browser-oauth-implicit:
     source: github:byuweb/byu-browser-oauth-implicit
+    configuration:
+      type: 'javascript'
+      prerelease: true
   byu-user-info-oauth:
     source: github:byuweb/byu-user-info-oauth
+    configuration:
+      type: 'javascript'
+      prerelease: true
   byu-person-lookup:
     source: github:byuweb/byu-person-lookup
+    configuration:
+      type: 'javascript'
+      prerelease: true
 
 infrastructure:
   environments:
