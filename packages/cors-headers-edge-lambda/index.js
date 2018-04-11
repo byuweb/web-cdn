@@ -33,5 +33,6 @@ exports.handler = (event, context, callback) => {
         value: '86400'
     }];
 
+    console.log('Sending response', JSON.stringify(response, null, 2));
     callback(null, response);
 };

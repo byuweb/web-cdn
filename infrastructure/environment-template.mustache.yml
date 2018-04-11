@@ -364,7 +364,7 @@ Resources:
       CodeUri: ./../packages/cors-headers-edge-lambda/
       Handler: index.handler
       Runtime: nodejs6.10
-      MemorySize: 512
+      MemorySize: 128
       Timeout: 20
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
@@ -372,7 +372,7 @@ Resources:
   CorsHeaderVersion{{corsHeaders.sha}}:
     Type: AWS::Lambda::Version
     Properties:
-      FunctionName: !Ref AliasResolverFunc
+      FunctionName: !Ref CorsHeaderFunc
 
 Outputs:
   ContentBucket:
