@@ -109,3 +109,4 @@ echo "Pre-fetching cdn aliases list to warm lambdas"
 
 curl "https://${rootDns}/manifest.json"
 curl "https://${rootDns}/.cdn-meta/aliases.json"
+curl "https://${rootDns}/byu-theme-components/latest/byu-theme-components.min.js"
