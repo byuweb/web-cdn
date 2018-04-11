@@ -374,26 +374,6 @@ Resources:
     Properties:
       FunctionName: !Ref AliasResolverFunc
 
-
-#  PublishLambdaVersionCustomResource:
-#    # This will take the $LATEST version of a function and publish a new version
-#    Type: AWS::Serverless::Function
-#    Properties:
-#      CodeUri: ./custom-resources/version-lambda/
-#      Handler: index.handler
-#      Runtime: nodejs6.10
-#      MemorySize: 128
-#      Timeout: 60
-#      Role:
-#        Fn::ImportValue: !Sub "${AccountStackName}-CloudformationCustomResourcesRole"
-#
-#  AliasResolverVersion:
-#    Type: Custom::PublishLambdaVersionCustomResource
-#    Properties:
-#      ServiceToken: !GetAtt PublishLambdaVersionCustomResource.Arn
-#      LambdaFunctionName: !Ref AliasResolverFunc
-#      Nonce: !Ref AliasResolverFunctionHash
-
 Outputs:
   ContentBucket:
     Value: !Ref CdnContentBucket
