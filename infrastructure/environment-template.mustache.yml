@@ -85,59 +85,6 @@ Resources:
         Value: !Sub "${CDNName} ${Environment} DNS Zone"
     DeletionPolicy: Retain
 
-  ContentBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: PublicRead
-      BucketName: !Sub "${CDNName}-contents-${AWS::Region}-${AWS::AccountId}"
-      CorsConfiguration:
-        CorsRules:
-        - Id: AllowAllGets
-          AllowedHeaders: ['*']
-          AllowedMethods: [GET, HEAD]
-          AllowedOrigins: ['*']
-          MaxAge: 86400
-      WebsiteConfiguration:
-        IndexDocument: index.html
-      VersioningConfiguration:
-        Status: Enabled
-      LifecycleConfiguration:
-        Rules:
-        - Id: ExpireOldVersions
-          NoncurrentVersionExpirationInDays: 180
-          Status: Enabled
-        - Id: RemoveOldBlobs
-          Status: Enabled
-          Prefix: '.cdn-meta/large-blobs/'
-          ExpirationInDays: 60
-      Tags:
-      - Key: Name
-        Value: !Sub "${CDNName} ${Environment} Contents"
-
-  ContentBucketAllowBuilderUpdates:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref ContentBucket
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS:
-                Fn::ImportValue: !Sub "${AccountStackName}-BuilderRole"
-            Action:
-              - s3:ListBucket
-              - s3:PutBucketWebsite
-              - s3:Get*
-            Resource: !Sub "arn:aws:s3:::${ContentBucket}"
-          - Effect: Allow
-            Principal:
-              AWS:
-                Fn::ImportValue: !Sub "${AccountStackName}-BuilderRole"
-            Action:
-              - s3:*
-            Resource: !Sub "arn:aws:s3:::${ContentBucket}/*"
-
   CdnContentBucket:
     Type: AWS::S3::Bucket
     Properties:
