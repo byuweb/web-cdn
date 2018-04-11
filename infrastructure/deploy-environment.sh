@@ -46,7 +46,7 @@ cors_hash_short=`echo ${alias_resolver_hash} | cut -c -6`
 
 templateDataFile=/tmp/template-data-$now.json
 
-echo '{ "aliasResolver": { "sha": "'${alias_resolver_hash_short}'" }, "cors": { "sha": "'${cors_hash_short}'" } }' > ${templateDataFile}
+echo '{ "aliasResolver": { "sha": "'${alias_resolver_hash_short}'" }, "corsHeaders": { "sha": "'${cors_hash_short}'" } }' > ${templateDataFile}
 
 renderedCfnFile=${here}/environment-template-rendered.yml
 
