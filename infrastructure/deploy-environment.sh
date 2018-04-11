@@ -33,10 +33,11 @@ now=$(date +"%s")
 echo "computing alias resolver shasum"
 alias_resolver_hash=`find packages/alias-resolver-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
 echo "Alias resolver hash is $alias_resolver_hash"
+alias_resolver_hash_short=`echo ${alias_resolver_hash} | cut -c -6`
 
 templateDataFile=/tmp/template-data-$now.json
 
-echo '{ "aliasResolver": { "sha": "'${alias_resolver_hash}'" } }' > ${templateDataFile}
+echo '{ "aliasResolver": { "sha": "'${alias_resolver_hash_short}'" } }' > ${templateDataFile}
 
 renderedCfnFile=${here}/environment-template-rendered.yml
 
@@ -69,8 +70,7 @@ parameters="CDNName=${cdnName}
  AccountStackName=${accountStack}
  CertificateArn=${certificateArn}
  ConfigurationGithubRepo=${configGithubRepo}
- ConfigurationGithubBranch=${configGithubBranch}
- AliasResolverFunctionHash=${alias_resolver_hash}"
+ ConfigurationGithubBranch=${configGithubBranch}"
 
 echo "Deploying ${stackname} with parameters ${parameters} and tags ${tags}"
 
