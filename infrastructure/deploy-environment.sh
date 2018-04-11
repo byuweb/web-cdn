@@ -31,25 +31,29 @@ working=$(pwd)
 now=$(date +"%s")
 
 echo "computing alias resolver shasum"
-alias_resolver_hash=`find packages/alias-resolver-lambda infrastructure/custom-resources/version-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
+alias_resolver_hash=`find packages/alias-resolver-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
 echo "Alias resolver hash is $alias_resolver_hash"
+
+templateDataFile=/tmp/template-data-$now.json
+
+echo '{ "aliasResolver": { "sha": "'${alias_resolver_hash}'" } }' > ${templateDataFile}
+
+renderedCfnFile=${here}/environment-template-rendered.yml
+
+mustache ${templateDataFile} ${here}/environment-template.mustache.yml > ${renderedCfnFile}
 
 stagingBucket=`getStackOutput ${accountStack} AccountBucketName`
 stagingBucketPrefix=`getStackOutput ${accountStack} AccountBucketCfnPrefix`
 
 packaged=/tmp/cdn-packaged-infrastructure-$now.yml
 
-echo "Initializing lambda version custom resource"
-cd ${here}/custom-resources/version-lambda && yarn --production || exit 1
-cd ${working}
-
 aws cloudformation validate-template \
-    --template-body file://${here}/environment.yml || exit 1
+    --template-body file://${renderedCfnFile} || exit 1
 
 echo Packaging to s3://${stagingBucket}/${stagingBucketPrefix}
 
 aws cloudformation package \
-    --template-file ${here}/environment.yml \
+    --template-file ${renderedCfnFile} \
     --s3-bucket ${stagingBucket} \
     --s3-prefix ${stagingBucketPrefix} \
     --output-template-file ${packaged} || exit 1

@@ -18,3 +18,5 @@ echo "Installing lerna"
 
 yarn global add lerna
 
+yarn global add mustache
+
