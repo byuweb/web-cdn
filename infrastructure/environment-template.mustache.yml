@@ -296,19 +296,20 @@ Resources:
           AllowedMethods: [GET, HEAD, OPTIONS]
           Compress: true
           ForwardedValues:
-            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
             QueryString: false
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
           DefaultTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, default ]
           MaxTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, max ]
           MinTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, min ]
+          LambdaFunctionAssociations:
+          - EventType: origin-response
+            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeader.sha}}
         CacheBehaviors:
         - PathPattern: '/*/latest/*'
           AllowedMethods: [GET, HEAD, OPTIONS]
           Compress: true
           ForwardedValues:
-            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
             QueryString: false
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
@@ -318,6 +319,8 @@ Resources:
           LambdaFunctionAssociations:
           - EventType: origin-request
             LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
+          - EventType: origin-response
+            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeader.sha}}
         - PathPattern: '/*/unstable/*'
           AllowedMethods: [GET, HEAD, OPTIONS]
           Compress: true
@@ -332,11 +335,12 @@ Resources:
           LambdaFunctionAssociations:
           - EventType: origin-request
             LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
+          - EventType: origin-response
+            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeader.sha}}
         - PathPattern: '/*/*.*.x/*'
           AllowedMethods: [GET, HEAD, OPTIONS]
           Compress: true
           ForwardedValues:
-            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
             QueryString: false
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
@@ -346,6 +350,8 @@ Resources:
           LambdaFunctionAssociations:
           - EventType: origin-request
             LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
+          - EventType: origin-response
+            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeader.sha}}
         Logging:
           Bucket:
             Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucketDomain"
@@ -403,6 +409,24 @@ Resources:
     Type: AWS::Lambda::Version
     Properties:
       FunctionName: !Ref AliasResolverFunc
+
+  CorsHeaderFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${CDNName}-edge-cors-headers-${Environment}"
+      CodeUri: ./../packages/cors-headers-edge-lambda/
+      Handler: index.handler
+      Runtime: nodejs6.10
+      MemorySize: 512
+      Timeout: 20
+      Role:
+        Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
+
+  CorsHeaderVersion{{corsHeader.sha}}:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref AliasResolverFunc
+
 
 #  PublishLambdaVersionCustomResource:
 #    # This will take the $LATEST version of a function and publish a new version

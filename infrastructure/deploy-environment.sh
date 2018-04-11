@@ -25,19 +25,28 @@ getStackOutput() {
   echo "$temp" | sed -e 's/^"//' -e 's/"$//'
 }
 
+packageChecksum() {
+  local directory=$1
+  echo "computing shasum of $directory" >&2
+  local hash=`find ${directory} -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
+  echo "shasum of ${directory} is ${hash}" >&2
+  echo ${hash}
+}
+
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 working=$(pwd)
 
 now=$(date +"%s")
 
-echo "computing alias resolver shasum"
-alias_resolver_hash=`find packages/alias-resolver-lambda -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d " " -f 1`
-echo "Alias resolver hash is $alias_resolver_hash"
+alias_resolver_hash=`packageChecksum packages/alias-resolver-lambda`
 alias_resolver_hash_short=`echo ${alias_resolver_hash} | cut -c -6`
+
+cors_hash=`packageChecksum packages/cors-headers-edge-lambda`
+cors_hash_short=`echo ${alias_resolver_hash} | cut -c -6`
 
 templateDataFile=/tmp/template-data-$now.json
 
-echo '{ "aliasResolver": { "sha": "'${alias_resolver_hash_short}'" } }' > ${templateDataFile}
+echo '{ "aliasResolver": { "sha": "'${alias_resolver_hash_short}'" }, "cors": { "sha": "'${cors_hash_short}'" } }' > ${templateDataFile}
 
 renderedCfnFile=${here}/environment-template-rendered.yml
 
