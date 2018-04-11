@@ -42,7 +42,7 @@ alias_resolver_hash=`packageChecksum packages/alias-resolver-lambda`
 alias_resolver_hash_short=`echo ${alias_resolver_hash} | cut -c -6`
 
 cors_hash=`packageChecksum packages/cors-headers-edge-lambda`
-cors_hash_short=`echo ${alias_resolver_hash} | cut -c -6`
+cors_hash_short=`echo ${cors_hash} | cut -c -6`
 
 templateDataFile=/tmp/template-data-$now.json
 
