@@ -92,20 +92,18 @@ exports.handler = (event, context, callback) => {
                     }],
                 }
             };
-            if (request.headers.origin) {
-                response.headers['access-control-allow-origin'] = [{
-                    key: 'Access-Control-Allow-Origin',
-                    value: '*'
-                }];
-                response.headers['access-control-allow-methods'] = [{
-                    key: 'Access-Control-Allow-Methods',
-                    value: 'GET, HEAD'
-                }];
-                response.headers['access-control-max-age'] = [{
-                    key: 'Access-Control-Max-Age',
-                    value: '86400'
-                }];
-            }
+            response.headers['access-control-allow-origin'] = [{
+                key: 'Access-Control-Allow-Origin',
+                value: '*'
+            }];
+            response.headers['access-control-allow-methods'] = [{
+                key: 'Access-Control-Allow-Methods',
+                value: 'GET, HEAD'
+            }];
+            response.headers['access-control-max-age'] = [{
+                key: 'Access-Control-Max-Age',
+                value: '86400'
+            }];
             callback(null, response);
         }).catch(err => {
             console.log('Got error', err);
