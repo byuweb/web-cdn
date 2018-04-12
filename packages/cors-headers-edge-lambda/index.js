@@ -17,7 +17,7 @@
 "use strict";
 
 const redirectCodeHeader = 'x-amz-meta-cdn-redirect-code';
-const redirectLocationHeader = 'x-amz-meta-cdn-redirect-location';
+const redirectLocationHeader = 'x-amz-website-redirect-location';
 const preloadHeader = 'x-amz-meta-cdn-preload';
 
 exports.handler = (event, context, callback) => {
@@ -84,5 +84,6 @@ function setHeader(response, name, value) {
 }
 
 function removeHeader(response, name) {
-    delete response.headers[name.toLowerCase()];
+    response.headers[name.toLowerCase()] = [];
+    // delete response.headers[name.toLowerCase()];
 }
