@@ -31,8 +31,8 @@ exports.handler = (event, context, callback) => {
         response.status = redirectCode;
         setHeader(response, 'Location', redirectLocation);
 
-        removeHeader(response, redirectCode);
-        removeHeader(response, redirectLocation);
+        removeHeader(response, redirectCodeHeader);
+        removeHeader(response, redirectLocationHeader);
     }
 
     const preload = getHeader(response, preloadHeader);
@@ -64,6 +64,8 @@ exports.handler = (event, context, callback) => {
     setHeader(response, 'Access-Control-Allow-Methods', 'GET, HEAD');
     setHeader(response, 'Access-Control-Max-Age', '86400');
 
+    removeHeader(response, 'x-amz-version-id');
+
     console.log('Sending response', JSON.stringify(response, null, 2));
     callback(null, response);
 };
@@ -84,6 +86,5 @@ function setHeader(response, name, value) {
 }
 
 function removeHeader(response, name) {
-    response.headers[name.toLowerCase()] = [];
-    // delete response.headers[name.toLowerCase()];
+    delete response.headers[name.toLowerCase()];
 }
