@@ -316,6 +316,7 @@ Resources:
         - Id: only-origin
           DomainName: !GetAtt CdnContentBucket.DomainName
           S3OriginConfig:
+            OriginAccessIdentity:
 #          DomainName: !Select [ 1, !Split [ "://", !GetAtt CdnContentBucket.WebsiteURL ] ]
 #          CustomOriginConfig:
 #            HTTPPort: 80
