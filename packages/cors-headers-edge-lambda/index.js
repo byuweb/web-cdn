@@ -16,23 +16,73 @@
  */
 "use strict";
 
+const redirectCodeHeader = 'x-amz-meta-cdn-redirect-code';
+const redirectLocationHeader = 'x-amz-meta-cdn-redirect-location';
+const preloadHeader = 'x-amz-meta-cdn-preload';
+
 exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
     const response = event.Records[0].cf.response;
 
-    response.headers['access-control-allow-origin'] = [{
-        key: 'Access-Control-Allow-Origin',
-        value: '*'
-    }];
-    response.headers['access-control-allow-methods'] = [{
-        key: 'Access-Control-Allow-Methods',
-        value: 'GET, HEAD'
-    }];
-    response.headers['access-control-max-age'] = [{
-        key: 'Access-Control-Max-Age',
-        value: '86400'
-    }];
+    const redirectCode = getHeader(response, redirectCodeHeader);
+    const redirectLocation = getHeader(response, redirectLocationHeader);
+
+    if (redirectCode && redirectLocation) {
+        response.status = redirectCode;
+        setHeader(response, 'Location', redirectLocation);
+
+        removeHeader(response, redirectCode);
+        removeHeader(response, redirectLocation);
+    }
+
+    const preload = getHeader(response, preloadHeader);
+    if (preload) {
+        const links = JSON.parse(preload);
+
+        response.headers['link'] = links.map(link => {
+            let value;
+            if (typeof link === 'string') {
+                value = `<${link}>; rel=preload`;
+            } else {
+                const flags = Object.keys(link).filter(k => k !== 'href')
+                    .map(key => `${key}="${link[key]}"`);
+                value = `<${link.href}>; rel=preload`;
+                if (flags.length > 0) {
+                    value = `${value}; ${flags.join('; ')}`;
+                }
+            }
+            return {
+                key: 'Link',
+                value: value,
+            }
+        });
+
+        removeHeader(response, preloadHeader);
+    }
+
+    setHeader(response, 'Access-Control-Allow-Origin', '*');
+    setHeader(response, 'Access-Control-Allow-Methods', 'GET, HEAD');
+    setHeader(response, 'Access-Control-Max-Age', '86400');
 
     console.log('Sending response', JSON.stringify(response, null, 2));
     callback(null, response);
 };
+
+function getHeader(response, name) {
+    const array = response.headers[name.toLowerCase()];
+    if (!array || array.length === 0) {
+        return null;
+    }
+    return array[0].value;
+}
+
+function setHeader(response, name, value) {
+    response.headers[name.toLowerCase()] = [{
+       key: name,
+       value: value,
+    }];
+}
+
+function removeHeader(response, name) {
+    delete response.headers[name.toLowerCase()];
+}

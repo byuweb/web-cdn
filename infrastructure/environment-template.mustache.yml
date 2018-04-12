@@ -314,11 +314,13 @@ Resources:
         IPV6Enabled: true
         Origins:
         - Id: only-origin
-          DomainName: !Select [ 1, !Split [ "://", !GetAtt CdnContentBucket.WebsiteURL ] ]
-          CustomOriginConfig:
-            HTTPPort: 80
-            HTTPSPort: 443
-            OriginProtocolPolicy: http-only
+          DomainName: !GetAtt CdnContentBucket.DomainName
+          S3OriginConfig:
+#          DomainName: !Select [ 1, !Split [ "://", !GetAtt CdnContentBucket.WebsiteURL ] ]
+#          CustomOriginConfig:
+#            HTTPPort: 80
+#            HTTPSPort: 443
+#            OriginProtocolPolicy: http-only
       Tags:
       - Key: Name
         Value: !Sub "${CDNName} ${Environment} Distribution"
