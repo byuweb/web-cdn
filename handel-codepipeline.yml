@@ -23,8 +23,8 @@ pipelines:
         cache: s3
       - type: slack_notify
         name: Notify
-        message: "Prod CDN Assembler Build Finished"
-        channel: "@jmooreoa"
+        message: "Prod CDN Assembler Build Finished (cdn.byu.edu)"
+        channel: "#eng-web-cdn"
   beta:
     phases:
       - type: github
@@ -44,8 +44,8 @@ pipelines:
         cache: s3
       - type: slack_notify
         name: Notify
-        message: "Beta CDN Assembler Build Finished"
-        channel: "@jmooreoa"
+        message: "Beta CDN Assembler Build Finished (beta.cdn.byu.edu)"
+        channel: "#eng-web-cdn"
   dev:
     phases:
       - type: github
@@ -65,6 +65,6 @@ pipelines:
         cache: s3
       - type: slack_notify
         name: Notify
-        message: "Dev CDN Assembler Build Finished"
-        channel: "@jmooreoa"
+        message: "Dev CDN Assembler Build Finished (dev.cdn.byu.edu)"
+        channel: "#eng-web-cdn"
 
