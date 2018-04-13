@@ -27,6 +27,7 @@ const {promisify} = require('util');
 const util = require('./util/util');
 const constants = require('./constants');
 const moment = require('moment-timezone');
+const mime = require('mime');
 
 const gzip = promisify(zlib.gzip);
 
@@ -43,22 +44,25 @@ module.exports = async function buildFilesystemMeta(manifest, assembledDir) {
             } catch (err) {
                 continue;
             }
-            let filesAndDirs = await scan(verDir, {filter: f => !f.includes('.cdn-meta')});
-            let files = filesAndDirs.filter(f => f.stats.isFile());
+            const filesAndDirs = await scan(verDir, {filter: f => !f.includes('.cdn-meta')});
+            const files = filesAndDirs.filter(f => f.stats.isFile());
             files.forEach(f => {
                 f.relative = path.relative(verDir, f.path);
             });
-            let resources = await files.reduce(async function (agg, f) {
+            const resources = await files.reduce(async function (agg, f) {
                 let nextAgg = await agg;
                 nextAgg[f.relative] = await fileSummary(f);
                 return nextAgg;
             }, {});
 
+            const groups = groupResources(resources);
+
             let versionManifest = {
                 '$manifest-spec': "2",
                 '$cdn-version': constants.CDN.VERSION,
                 '$built': moment().tz('America/Denver').format(),
-                resources
+                resources,
+                resource_groups: groups,
             };
 
             // TODO: Move this to the proper location (upload-files).
@@ -82,10 +86,15 @@ async function fileSummary(file) {
     let gzipped = await gzip(content);
 
     return {
+        type: mimeTypeFor(file.path),
         size: stat.size,
         gzip_size: gzipped.length,
         hashes: hashesFor(content, ['sha256', 'sha384', 'sha512'])
     };
+}
+
+function mimeTypeFor(file) {
+    return mime.getType(file) || 'unknown';
 }
 
 function hashesFor(content, algos) {
@@ -95,70 +104,59 @@ function hashesFor(content, algos) {
     }, {});
 }
 
-/*
-   resourceGroups() {
-      const groups = {};
 
-      const resources = this.resources;
+function groupResources(resources) {
+    // const groups = [];
 
-      for (const [id, res] of Object.entries(resources)) {
-        const variant = getVariant(id);
-        if (!variant) {
-          const group = (groups[id] = groups[id] || {
-            variants: []
-          });
-          group.baseFile = res;
-          continue;
+    const groups = Object.keys(resources).map(file => {
+        const variant = getVariant(file);
+        if (variant) {
+            return {file, base: variant.base, variant: variant.id};
+        } else {
+            return {file, base: file};
         }
-        const { parent, details } = variant;
-        const group = (groups[parent] = groups[parent] || {
-          baseFile: null,
-          variants: []
-        });
+    }).reduce((agg, {file, base, variant}) => {
+        let group = agg[base];
+        if (!group) {
+            group = agg[base] = {
+                base_file: base,
+                variants: {}
+            }
+        }
+        if (variant) {
+            group.variants[variant] = file;
+        }
+        return agg;
+    }, {});
 
-        group.variants.push({
-          variant: details,
-          info: res
-        });
-      }
-
-      return groups;
-    }
-  }
-  //   mounted() {
-  //       window.scrollTo(0, 0);
-  //   },
-};
+    return Object.values(groups);
+}
 
 const FILE_VARIANTS = [
-  {
-    id: "min",
-    display: "Minified File",
-    pattern: /\.min\.([a-z]+)$/
-  },
-  {
-    id: "min-sourcemap",
-    display: "Minified Source Map",
-    pattern: /\.min\.([a-z]+).map$/
-  },
-  {
-    id: "sourcemap",
-    display: "Source Map",
-    pattern: /\.([a-z]+)\.map$/
-  }
+    {
+        id: "min",
+        pattern: /\.min\.([a-z]+)$/
+    },
+    {
+        id: "min-sourcemap",
+        pattern: /\.min\.([a-z]+).map$/
+    },
+    {
+        id: "sourcemap",
+        pattern: /\.([a-z]+)\.map$/
+    }
 ];
 
 function getVariant(file) {
-  const variant = FILE_VARIANTS.find(v => v.pattern.test(file));
-  if (!variant) {
-    return null;
-  }
-  const parent = file.replace(variant.pattern, "") + "." + file.match(variant.pattern)[1];
+    const variant = FILE_VARIANTS.find(v => v.pattern.test(file));
+    if (!variant) {
+        return null;
+    }
+    const base = file.replace(variant.pattern, "") + "." + file.match(variant.pattern)[1];
 
-  return {
-    parent,
-    details: variant
-  };
+    return {
+        base,
+        id: variant.id,
+    };
 }
- */
 
