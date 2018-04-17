@@ -28,6 +28,7 @@ const util = require('./util/util');
 const constants = require('./constants');
 const moment = require('moment-timezone');
 const mime = require('mime');
+const providers = require('./providers');
 
 const gzip = promisify(zlib.gzip);
 
@@ -36,6 +37,8 @@ module.exports = async function buildFilesystemMeta(manifest, assembledDir) {
         let libDir = path.join(assembledDir, id);
 
         const result = {};
+
+        const provider = providers.getProvider(lib.source, lib.lib_config);
 
         for (let ver of lib.versions) {
             let verDir = path.join(libDir, ver.name);
@@ -57,18 +60,29 @@ module.exports = async function buildFilesystemMeta(manifest, assembledDir) {
 
             const groups = groupResources(resources);
 
+            const readme = await provider.fetchReadme(ver.ref);
+
+            // TODO: Move this to the proper location (upload-files).
+            const metaDir = path.join(verDir, '.cdn-meta');
+
+            await fs.ensureDir(metaDir);
+
+            let readmePath = undefined;
+
+            if (readme){
+                readmePath = path.join(metaDir, readme.filename);
+                await fs.writeFile(readmePath, readme.content);
+            }
+
             let versionManifest = {
                 '$manifest-spec': "2",
                 '$cdn-version': constants.CDN.VERSION,
                 '$built': moment().tz('America/Denver').format(),
                 resources,
                 resource_groups: groups,
+                readme_path: readmePath,
             };
 
-            // TODO: Move this to the proper location (upload-files).
-            const metaDir = path.join(verDir, '.cdn-meta');
-
-            await fs.ensureDir(metaDir);
             await fs.writeJson(path.join(metaDir, 'version-manifest.json'), versionManifest, {spaces: 2});
 
             result[ver.name] = versionManifest;
@@ -106,8 +120,6 @@ function hashesFor(content, algos) {
 
 
 function groupResources(resources) {
-    // const groups = [];
-
     const groups = Object.keys(resources).map(file => {
         const variant = getVariant(file);
         if (variant) {

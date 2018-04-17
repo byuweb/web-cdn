@@ -156,6 +156,24 @@ module.exports = class GithubProvider {
         };
     }
 
+    async fetchReadme(ref) {
+        log.debug(`Getting README for ${this.source}@${ref}`);
+
+        try {
+            const readme = await http.getJson(`${this.baseUri}/readme?ref=${encodeURIComponent(ref)}`);
+
+            const content = Buffer.from(readme.content, readme.encoding).toString('utf8');
+
+            return {
+                filename: readme.name,
+                content: content
+            };
+        } catch (err) {
+            log.debug(`Error getting README for ${this.source}@${ref}`, err);
+            return null;
+        }
+    }
+
     async fetchMainConfig() {
         return this.fetchRepoConfig('master');
     }

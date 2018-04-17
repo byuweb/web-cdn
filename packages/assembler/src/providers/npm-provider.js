@@ -128,6 +128,21 @@ module.exports = class NpmProvider {
 
         await getTarball(http, ver.tarball_url, destination);
     }
+
+    async fetchReadme(ref) {
+        log.debug(`Getting README for ${this.source}@${ref}`);
+
+        let npmData = await this._npmData();
+
+        if (!npmData.readmeFilename) {
+            return null;
+        }
+        return {
+            filename: npmData.readmeFilename,
+            content: npmData.readme,
+        };
+    }
+
 };
 
 async function npmGet(uri) {
