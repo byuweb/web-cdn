@@ -121,6 +121,8 @@ libraries:
     configuration:
       type: 'javascript'
       prerelease: true
+  font-metrics:
+    source: github:byuweb/font-metrics-collector
 
 infrastructure:
   environments:
