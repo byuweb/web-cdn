@@ -29,9 +29,6 @@ basic_usage:
     <byu-footer></byu-footer>
 show_in_directory: false #defaults to true
 docs: https://github.com/byuweb/2017-components #This is a URL to documentation about how to use the library
-#build: inferred
+
 build:
-  dependencies:
-    - yarn install
-  build:
-    - yarn build
+  provider: circleci
