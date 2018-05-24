@@ -16,26 +16,26 @@
  */
 "use strict";
 
-const redirectCodeHeader = 'x-amz-meta-cdn-redirect-code';
-const redirectLocationHeader = 'x-amz-website-redirect-location';
-const preloadHeader = 'x-amz-meta-cdn-preload';
+const REDIRECT_CODE_HEADER = 'x-amz-meta-cdn-redirect-code';
+const REDIRECT_LOCATION_HEADER = 'x-amz-website-redirect-location';
+const PRELOAD_HEADER = 'x-amz-meta-cdn-preload';
 
 exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
     const response = event.Records[0].cf.response;
 
-    const redirectCode = getHeader(response, redirectCodeHeader);
-    const redirectLocation = getHeader(response, redirectLocationHeader);
+    const redirectCode = getHeader(response, REDIRECT_CODE_HEADER);
+    const redirectLocation = getHeader(response, REDIRECT_LOCATION_HEADER);
 
     if (redirectCode && redirectLocation) {
         response.status = redirectCode;
         setHeader(response, 'Location', redirectLocation);
 
-        removeHeader(response, redirectCodeHeader);
-        removeHeader(response, redirectLocationHeader);
+        removeHeader(response, REDIRECT_CODE_HEADER);
+        removeHeader(response, REDIRECT_LOCATION_HEADER);
     }
 
-    const preload = getHeader(response, preloadHeader);
+    const preload = getHeader(response, PRELOAD_HEADER);
     if (preload) {
         const links = JSON.parse(preload);
 
@@ -57,10 +57,11 @@ exports.handler = (event, context, callback) => {
             }
         });
 
-        removeHeader(response, preloadHeader);
+        removeHeader(response, PRELOAD_HEADER);
     }
 
     setHeader(response, 'Access-Control-Allow-Origin', '*');
+    setHeader(response, 'Timing-Allow-Origin', '*');
     setHeader(response, 'Access-Control-Allow-Methods', 'GET, HEAD');
     setHeader(response, 'Access-Control-Max-Age', '86400');
 

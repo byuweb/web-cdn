@@ -50,6 +50,7 @@ module.exports = async function uploadFiles(oldManifest, newManifest, versionMan
     let invalidate = ['manifest.json'];
     let remove = [];
     let syncLargeFile = [];
+    let syncAlias = [];
 
     Object.entries(actions).forEach(([libId, libActions]) => {
         let libDefn = newManifest.libraries[libId] || oldManifest.libraries[libId];
@@ -61,6 +62,7 @@ module.exports = async function uploadFiles(oldManifest, newManifest, versionMan
         syncLargeFile.push(...syncActions.syncLargeFile);
         invalidate.push(...syncActions.invalidate);
         remove.push(...syncActions.remove);
+        syncAlias.push(...syncActions.syncAlias)
     });
 
     log.info('Uploading large files');
@@ -80,7 +82,7 @@ module.exports = async function uploadFiles(oldManifest, newManifest, versionMan
         return deleteDir(bucket, each, dryRun);
     });
 
-    // log.info('Updating alias RedirectRules');
+    // log.info('Updating aliases');
     // let redirects = computeRedirects(newManifest);
     // await updateRedirects(bucket, redirects, cdnHost, dryRun);
 
@@ -115,6 +117,7 @@ function prepareLibSync(libId, lib, versionManifests, actions, assembledDir) {
         syncLargeFile: [],
         invalidate: [],
         remove: [],
+        syncAlias: [],
     };
     if (actions.deleteLib) {
         syncActions.remove.push(libId + '/');
@@ -135,6 +138,7 @@ function prepareLibSync(libId, lib, versionManifests, actions, assembledDir) {
 
         const metadata = metadataFor(libId, version);
         const cacheControl = cacheControlFor(libId, version);
+        const aliasCacheControl = aliasCacheControlFor(libId, version);
 
         syncActions.sync.push({
             from: assembled,
@@ -147,15 +151,24 @@ function prepareLibSync(libId, lib, versionManifests, actions, assembledDir) {
 
         let aliases = aliasesReversed[versionName];
 
+        const resources = Object.entries(manifest.resources);
+
         if (aliases) {
             aliases.forEach(alias => {
                 let aliasPrefix = `${libId}/${alias}/`;
-                syncActions.invalidate.push(aliasPrefix + "*")
+                syncActions.invalidate.push(aliasPrefix + "*");
+
+                resources.forEach(([key, it]) => {
+                    syncActions.syncAlias.push({
+                        path: aliasPrefix + key,
+                        target: prefix + key,
+                        cacheControl: aliasCacheControl
+                    })
+                });
             });
         }
 
-        Object.entries(manifest.resources)
-            .filter(([key, it]) => it.size >= LARGE_FILE_LIMIT)
+        resources.filter(([key, it]) => it.size >= LARGE_FILE_LIMIT)
             .map(([key, it]) => {
                 return {
                     from: path.join(assembled, key),
@@ -377,33 +390,27 @@ async function deleteDir(bucket, prefix, dryRun) {
 }
 
 async function updateRedirects(bucket, redirects, cdnHost, dryRun) {
-    let routingRules = redirects.map(it => {
-        return {
-            Condition: {
-                KeyPrefixEquals: it.from
-            },
-            Redirect: {
-                Protocol: 'https',
-                HostName: cdnHost,
-                ReplaceKeyPrefixWith: it.to,
-                HttpRedirectCode: "302"
-            },
-        };
-    });
+    // let routingRules = redirects.map(it => {
+    //     return {
+    //         Condition: {
+    //             KeyPrefixEquals: it.from
+    //         },
+    //         Redirect: {
+    //             Protocol: 'https',
+    //             HostName: cdnHost,
+    //             ReplaceKeyPrefixWith: it.to,
+    //             HttpRedirectCode: "302"
+    //         },
+    //     };
+    // });
 
     if (dryRun) {
-        log.info('skipping (dry run). Would set up routing rules:\n' + JSON.stringify(routingRules, null, 2));
+        log.info('skipping (dry run)');
         return;
     }
-    log.info('Configuring Routing Rules:\n' + JSON.stringify(routingRules, null, 2));
-    let config = await s3Client.getBucketWebsite({Bucket: bucket}).promise();
 
-    config.RoutingRules = routingRules;
+    log.info('Configuring Alias Redirects:\n' + JSON.stringify(routingRules, null, 2));
 
-    return s3Client.putBucketWebsite({
-        Bucket: bucket,
-        WebsiteConfiguration: config
-    }).promise();
 }
 
 function metadataFor(libId, version) {
@@ -419,6 +426,14 @@ function cacheControlFor(libId, version) {
         return 'public, max-age=31557600, s-maxage=31557600, immutable';
     } else {
         return 'public, max-age=300, s-maxage=300';
+    }
+}
+
+function aliasCacheControlFor(libId, version) {
+    if (version.type === 'release') {
+        return 'public, max-age=3600, s-maxage=300';
+    } else {
+        return 'public, max-age=60, s-maxage=0';
     }
 }
 
