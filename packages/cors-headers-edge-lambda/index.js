@@ -20,52 +20,87 @@ const REDIRECT_CODE_HEADER = 'x-amz-meta-cdn-redirect-code';
 const REDIRECT_LOCATION_HEADER = 'x-amz-website-redirect-location';
 const PRELOAD_HEADER = 'x-amz-meta-cdn-preload';
 
+const HEADER_PREFIX = 'x-amz-meta-*header*';
+
 exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
-    const response = event.Records[0].cf.response;
+    const s3Response = event.Records[0].cf.response;
 
-    const redirectCode = getHeader(response, REDIRECT_CODE_HEADER);
-    const redirectLocation = getHeader(response, REDIRECT_LOCATION_HEADER);
+    const response = {};
 
-    if (redirectCode && redirectLocation) {
-        response.status = redirectCode;
-        setHeader(response, 'Location', redirectLocation);
+    let status = getHeader(s3Response, 'x-amz-meta-*status*') || s3Response.status;
+    const redirect = getHeader(s3Response, 'Website-Redirect-Location');
 
-        removeHeader(response, REDIRECT_CODE_HEADER);
-        removeHeader(response, REDIRECT_LOCATION_HEADER);
+    if (redirect) {
+        if (!status) {
+            status = 302;
+        }
+        setHeader(s3Response, 'Location', redirect);
     }
 
-    const preload = getHeader(response, PRELOAD_HEADER);
-    if (preload) {
-        const links = JSON.parse(preload);
+    response.status = status;
 
-        response.headers['link'] = links.map(link => {
-            let value;
-            if (typeof link === 'string') {
-                value = `<${link}>; rel=preload`;
-            } else {
-                const flags = Object.keys(link).filter(k => k !== 'href')
-                    .map(key => `${key}="${link[key]}"`);
-                value = `<${link.href}>; rel=preload`;
-                if (flags.length > 0) {
-                    value = `${value}; ${flags.join('; ')}`;
-                }
-            }
-            return {
-                key: 'Link',
-                value: value,
-            }
-        });
+    response.headers = Object.keys(s3Response.headers)
+        .filter(it => it.indexOf(HEADER_PREFIX) === 0)
+        .map(it => [it, s3Response.headers[it]])
+        .reduce((headers, [key, values]) => {
+            headers[key.substring(HEADER_PREFIX.length)] =
+                values.map(v => {
+                    return {
+                        key: v.key.substring(HEADER_PREFIX.length),
+                        value: v.value
+                    }
+                });
+            return headers;
+        }, {});
 
-        removeHeader(response, PRELOAD_HEADER);
+    const type = getHeader(s3Response, 'Content-Type');
+    if (type) {
+        response.headers['content-type'] = [ {key: 'Content-Type', value: type } ]
     }
 
-    setHeader(response, 'Access-Control-Allow-Origin', '*');
-    setHeader(response, 'Timing-Allow-Origin', '*');
-    setHeader(response, 'Access-Control-Allow-Methods', 'GET, HEAD');
-    setHeader(response, 'Access-Control-Max-Age', '86400');
-
-    removeHeader(response, 'x-amz-version-id');
+    // const redirectCode = getHeader(response, REDIRECT_CODE_HEADER);
+    // const redirectLocation = getHeader(response, REDIRECT_LOCATION_HEADER);
+    //
+    // if (redirectCode && redirectLocation) {
+    //     response.status = redirectCode;
+    //     setHeader(response, 'Location', redirectLocation);
+    //
+    //     removeHeader(response, REDIRECT_CODE_HEADER);
+    //     removeHeader(response, REDIRECT_LOCATION_HEADER);
+    // }
+    //
+    // const preload = getHeader(response, PRELOAD_HEADER);
+    // if (preload) {
+    //     const links = JSON.parse(preload);
+    //
+    //     response.headers['link'] = links.map(link => {
+    //         let value;
+    //         if (typeof link === 'string') {
+    //             value = `<${link}>; rel=preload`;
+    //         } else {
+    //             const flags = Object.keys(link).filter(k => k !== 'href')
+    //                 .map(key => `${key}="${link[key]}"`);
+    //             value = `<${link.href}>; rel=preload`;
+    //             if (flags.length > 0) {
+    //                 value = `${value}; ${flags.join('; ')}`;
+    //             }
+    //         }
+    //         return {
+    //             key: 'Link',
+    //             value: value,
+    //         }
+    //     });
+    //
+    //     removeHeader(response, PRELOAD_HEADER);
+    // }
+    //
+    // setHeader(response, 'Access-Control-Allow-Origin', '*');
+    // setHeader(response, 'Timing-Allow-Origin', '*');
+    // setHeader(response, 'Access-Control-Allow-Methods', 'GET, HEAD');
+    // setHeader(response, 'Access-Control-Max-Age', '86400');
+    //
+    // removeHeader(response, 'x-amz-version-id');
 
     console.log('Sending response', JSON.stringify(response, null, 2));
     callback(null, response);
@@ -81,8 +116,8 @@ function getHeader(response, name) {
 
 function setHeader(response, name, value) {
     response.headers[name.toLowerCase()] = [{
-       key: name,
-       value: value,
+        key: name,
+        value: value,
     }];
 }
 

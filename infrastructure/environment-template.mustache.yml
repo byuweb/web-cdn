@@ -252,53 +252,53 @@ Resources:
           LambdaFunctionAssociations:
           - EventType: origin-response
             LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
-        CacheBehaviors:
-        - PathPattern: '/*/latest/*'
-          AllowedMethods: [GET, HEAD, OPTIONS]
-          Compress: true
-          ForwardedValues:
-            QueryString: false
-          TargetOriginId: only-origin
-          ViewerProtocolPolicy: redirect-to-https
-          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
-          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
-          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
-          LambdaFunctionAssociations:
-          - EventType: origin-request
-            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
-          - EventType: origin-response
-            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
-        - PathPattern: '/*/unstable/*'
-          AllowedMethods: [GET, HEAD, OPTIONS]
-          Compress: true
-          ForwardedValues:
-            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
-            QueryString: false
-          TargetOriginId: only-origin
-          ViewerProtocolPolicy: redirect-to-https
-          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
-          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
-          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
-          LambdaFunctionAssociations:
-          - EventType: origin-request
-            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
-          - EventType: origin-response
-            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
-        - PathPattern: '/*/*.*.x/*'
-          AllowedMethods: [GET, HEAD, OPTIONS]
-          Compress: true
-          ForwardedValues:
-            QueryString: false
-          TargetOriginId: only-origin
-          ViewerProtocolPolicy: redirect-to-https
-          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
-          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
-          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
-          LambdaFunctionAssociations:
-          - EventType: origin-request
-            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
-          - EventType: origin-response
-            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
+#        CacheBehaviors:
+#        - PathPattern: '/*/latest/*'
+#          AllowedMethods: [GET, HEAD, OPTIONS]
+#          Compress: true
+#          ForwardedValues:
+#            QueryString: false
+#          TargetOriginId: only-origin
+#          ViewerProtocolPolicy: redirect-to-https
+#          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
+#          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
+#          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
+#          LambdaFunctionAssociations:
+#          - EventType: origin-request
+#            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
+#          - EventType: origin-response
+#            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
+#        - PathPattern: '/*/unstable/*'
+#          AllowedMethods: [GET, HEAD, OPTIONS]
+#          Compress: true
+#          ForwardedValues:
+#            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
+#            QueryString: false
+#          TargetOriginId: only-origin
+#          ViewerProtocolPolicy: redirect-to-https
+#          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
+#          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
+#          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
+#          LambdaFunctionAssociations:
+#          - EventType: origin-request
+#            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
+#          - EventType: origin-response
+#            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
+#        - PathPattern: '/*/*.*.x/*'
+#          AllowedMethods: [GET, HEAD, OPTIONS]
+#          Compress: true
+#          ForwardedValues:
+#            QueryString: false
+#          TargetOriginId: only-origin
+#          ViewerProtocolPolicy: redirect-to-https
+#          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
+#          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
+#          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
+#          LambdaFunctionAssociations:
+#          - EventType: origin-request
+#            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
+#          - EventType: origin-response
+#            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
         Logging:
           Bucket:
             Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucketDomain"

@@ -22,6 +22,7 @@ const s3 = new AWS.S3();
 const fs = require('fs-extra');
 const path = require('path');
 const log = require('winston');
+const axios = require('axios');
 
 const loadGithubCredentials = require('./src/util/load-github-credentials');
 const GithubProvider = require('./src/providers/github-provider');
@@ -31,12 +32,13 @@ const planActions = require('./src/plan-actions');
 const downloadSources = require('./src/download-sources');
 const assembleArtifacts = require('./src/copy-resources');
 const buildMeta = require('./src/build-meta');
-const uploadFiles = require('./src/upload-files');
+const {uploadFiles2} = require('./src/upload-files');
+const buildLayout = require('./src/build-layout');
 const constants = require('./src/constants');
 
 
 module.exports = async function cdnAssembler(config, targetBucket, opts) {
-    let { workDir, githubCredentials, dryRun, env, forceBuild } = (opts || {});
+    let {workDir, githubCredentials, dryRun, env, forceBuild, cdnHost} = (opts || {});
 
     await setupGithubCredentials(githubCredentials, env);
 
@@ -54,9 +56,10 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     let assembledDir = path.join(workDir, 'assembled');
 
     log.info("----- Getting current manifest -----");
-    let oldManifest = await getOldManifest(targetBucket);
+    let oldManifest = await getOldManifest(targetBucket, cdnHost);
+
     log.info("----- Building new manifest -----");
-    let newManifest = await assembleManifest(config, opts.cdnHost);
+    let newManifest = await assembleManifest(config, cdnHost);
 
     await fs.writeJson(path.join(workDir, 'manifest.json'), newManifest, {
         spaces: 1,
@@ -81,35 +84,62 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     log.info("----- Downloading Sources -----");
     let sourceDirs = await downloadSources(newManifest, actions, sourceDir);
 
-    log.info("----- Copying CDN Resources -----");
+    log.info("----- Assembling Artifacts -----");
     await assembleArtifacts(newManifest, actions, sourceDirs, assembledDir);
 
-    log.info("----- Building Library Meta Files -----");
-    const versionManifests = await buildMeta(newManifest, assembledDir);
+    log.info("----- Building CDN Layout -----");
+    const filesystem = await buildLayout(oldManifest, newManifest, actions, sourceDirs, cdnHost);
 
+    await fs.writeJson('./filesystem.json', filesystem, {spaces: 2})
+
+    // log.info("----- Building Library Meta Files -----");
+    // const versionManifests = await buildMeta(newManifest, assembledDir);
+    //
     log.info("----- Uploading Files -----");
-    await uploadFiles(oldManifest, newManifest, versionManifests, actions, targetBucket, assembledDir, opts.cdnHost, dryRun);
+    await uploadFiles2(targetBucket, filesystem, actions, newManifest, dryRun);
+    // await uploadFiles(oldManifest, newManifest, versionManifests, actions, targetBucket, assembledDir, cdnHost, dryRun);
 };
 
-async function getOldManifest(bucket) {
+async function getOldManifest(bucket, cdnHost) {
+    const found = (await getManifestFromS3(bucket)) || (await getManifestViaHTTP(cdnHost));
+
+    return found || getEmptyManifest();
+}
+
+async function getManifestFromS3(bucket) {
+    log.debug('Getting manifest from S3 bucket', bucket);
     try {
         let obj = await s3.getObject({
             Bucket: bucket,
             Key: 'manifest.json'
         }).promise();
+        log.debug('Successfully got manifest from S3');
         return JSON.parse(obj.Body);
-    } catch (ex) {
-        if (ex.code !== 'NoSuchKey') {
-            throw ex;
-        }
-        log.warn("No manifest in content bucket; using stub");
-        return {
-            '$cdn-version': constants.CDN.VERSION,
-            '$manifest-spec': constants.CDN.MANIFEST_SPEC,
-            '$built': '1970-01-01T00:00:00Z',
-            libraries: {}
-        };
+    } catch (err) {
+        console.error('Error getting manifest from S3', err);
+        return null;
     }
+}
+
+async function getManifestViaHTTP(cdnHost) {
+    log.debug('Getting manifest from CDN via HTTP');
+    try {
+        const resp = await axios.get(`https://${cdnHost}/manifest.json`);
+        log.debug('Got manifest via HTTP');
+        return resp.data;
+    } catch (err) {
+        log.error('Error getting manifest via HTTP: ', err.response.status, err.message);
+        return null;
+    }
+}
+
+function getEmptyManifest() {
+    return {
+        '$cdn-version': constants.CDN.VERSION,
+        '$manifest-spec': constants.CDN.MANIFEST_SPEC,
+        '$built': '1970-01-01T00:00:00Z',
+        libraries: {}
+    };
 }
 
 function logPlannedActions(actions) {

@@ -45,7 +45,7 @@ const LARGE_FILE_LIMIT = 768000; //768 kB
 
 const LARGE_FILE_PREFIX = '.cdn-meta/large-blobs/';
 
-module.exports = async function uploadFiles(oldManifest, newManifest, versionManifests, actions, bucket, assembledDir, cdnHost, dryRun) {
+module.exports.uploadFile1 = async function uploadFiles(oldManifest, newManifest, versionManifests, actions, bucket, assembledDir, cdnHost, dryRun) {
     let sync = [];
     let invalidate = ['manifest.json'];
     let remove = [];
@@ -94,6 +94,120 @@ module.exports = async function uploadFiles(oldManifest, newManifest, versionMan
 
     //TODO: add cloudfront invalidation
 };
+
+exports.uploadFiles2 = async function (bucket, files, actions, manifest, dryRun) {
+    log.debug(`Uploading ${files.length} files to ${bucket}`);
+
+    if (dryRun) {
+        log.debug('Dry Run. Skipping.');
+        return;
+    }
+
+    log.info('Uploading file contents');
+    await uploadContents(bucket, files);
+
+    log.info('Copying file contents');
+
+    await copyFilesToDestination(bucket, files);
+
+    log.info('Updating Manifest');
+    await uploadManifest(bucket, manifest, dryRun);
+
+};
+
+async function uploadContents(bucket, files) {
+    const copied = new Set();
+
+    return batch(files, async file => {
+        const sha = file.fileSha512;
+
+        if (copied.has(sha)) {
+            return;
+        }
+
+        const s3Key = LARGE_FILE_PREFIX + sha;
+
+        if (!await existsInS3(bucket, s3Key)) {
+            await uploadFileContents(bucket, s3Key, file);
+        }
+        copied.add(sha);
+    });
+}
+
+async function uploadFileContents(bucket, s3Key, file) {
+    let body;
+    if (file.contentPath) {
+        body = fs.createReadStream(file.contentPath);
+    } else if (file.contents) {
+        body = file.contents;
+    } else {
+        body = '';
+    }
+
+    await s3Client.putObject({
+        Bucket: bucket,
+        Key: s3Key,
+        ACL: 'private',
+        Body: body,
+        ContentType: file.type
+    }).promise();
+}
+
+async function copyFilesToDestination(bucket, files) {
+    return batch(files, async file => {
+        const sha = file.fileSha512;
+        if (!sha) {
+            return;
+        }
+        const config = {
+            Bucket: bucket,
+            ACL: 'public-read',
+            CacheControl: file.meta.cacheControl,
+            ContentType: file.type,
+            CopySource: `/${bucket}/${LARGE_FILE_PREFIX}${sha}`,
+            Key: file.cdnPath,
+            Metadata: metadataForFile(file),
+            MetadataDirective: "REPLACE",
+
+        };
+
+        if (file.meta.redirect) {
+            if (file.meta.redirect.status) {
+                config.Metadata['*status*'] = String(file.meta.redirect.status);
+            }
+            config.WebsiteRedirectLocation = file.meta.redirect.location;
+        }
+
+        await s3Client.copyObject(config).promise();
+
+        if (file.meta.tags) {
+            await s3Client.putObjectTagging({
+                Bucket: bucket,
+                Key: file.cdnPath,
+                Tagging: {
+                    TagSet: Object.entries(file.meta.tags)
+                        .map(([key, value]) => {
+                            return {
+                                Key: key,
+                                Value: value
+                            }
+                        }),
+                }
+            }).promise();
+        }
+    });
+}
+
+function metadataForFile(file) {
+    if (!file.meta || !file.meta.headers) {
+        return {};
+    }
+    return Object.entries(file.meta.headers)
+        .reduce((obj, [key, value]) => {
+            obj['*header*' + key] = value;
+            return obj;
+        }, {});
+}
 
 async function batch(items, action) {
     return uploadQueue.addAll(items.map(queuedAction));
