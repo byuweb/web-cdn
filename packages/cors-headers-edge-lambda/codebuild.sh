@@ -2,5 +2,10 @@
 
 echo "=========== Building cors-lambda ==========="
 
-echo "No build tasks to run"
+npm run test
+
+rm -rf node_modules
+
+npm i --production
+
 
