@@ -49,7 +49,7 @@ exports.handler = (event, context, callback) => {
         response.headers['content-type'] = [ {key: 'Content-Type', value: type } ]
     }
 
-    const redirect = getHeader(s3Response, 'Website-Redirect-Location');
+    const redirect = getHeader(s3Response, REDIRECT_LOCATION_HEADER);
 
     if (redirect) {
         if (!status) {
