@@ -16,40 +16,20 @@
  */
 "use strict";
 
-const REDIRECT_CODE_HEADER = 'x-amz-meta-cdn-redirect-code';
 const REDIRECT_LOCATION_HEADER = 'x-amz-website-redirect-location';
-const PRELOAD_HEADER = 'x-amz-meta-cdn-preload';
+
+const STATUS_HEADER = 'x-amz-meta-*status*';
 
 const HEADER_PREFIX = 'x-amz-meta-*header*';
+const HEADER_PREFIX_LENGTH = HEADER_PREFIX.length;
 
 exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
-    const s3Response = event.Records[0].cf.response;
+    const response = event.Records[0].cf.response;
 
-    const response = {};
+    let status = getHeader(response, STATUS_HEADER) || response.status;
 
-    let status = getHeader(s3Response, 'x-amz-meta-*status*') || s3Response.status;
-
-    response.headers = Object.keys(s3Response.headers)
-        .filter(it => it.indexOf(HEADER_PREFIX) === 0)
-        .map(it => [it, s3Response.headers[it]])
-        .reduce((headers, [key, values]) => {
-            headers[key.substring(HEADER_PREFIX.length)] =
-                values.map(v => {
-                    return {
-                        key: v.key.substring(HEADER_PREFIX.length),
-                        value: v.value
-                    }
-                });
-            return headers;
-        }, {});
-
-    const type = getHeader(s3Response, 'Content-Type');
-    if (type) {
-        response.headers['content-type'] = [ {key: 'Content-Type', value: type } ]
-    }
-
-    const redirect = getHeader(s3Response, REDIRECT_LOCATION_HEADER);
+    const redirect = getHeader(response, REDIRECT_LOCATION_HEADER);
 
     if (redirect) {
         if (!status) {
@@ -58,51 +38,24 @@ exports.handler = (event, context, callback) => {
         setHeader(response, 'Location', redirect);
     }
 
+    for (const key of Object.keys(response.headers)) {
+        const values = response.headers[key];
+
+        if (key.indexOf(HEADER_PREFIX) === 0) {
+            const fixedKey = key.substring(HEADER_PREFIX_LENGTH);
+            response.headers[fixedKey] = values.map(([k, v]) => {
+                return {
+                    key: k.substring(HEADER_PREFIX_LENGTH),
+                    value: v
+                };
+            });
+        } else if (key.indexOf('x-amz') !== 0) {
+            continue;
+        }
+        delete response.headers[key];
+    }
+
     response.status = status;
-
-
-    // const redirectCode = getHeader(response, REDIRECT_CODE_HEADER);
-    // const redirectLocation = getHeader(response, REDIRECT_LOCATION_HEADER);
-    //
-    // if (redirectCode && redirectLocation) {
-    //     response.status = redirectCode;
-    //     setHeader(response, 'Location', redirectLocation);
-    //
-    //     removeHeader(response, REDIRECT_CODE_HEADER);
-    //     removeHeader(response, REDIRECT_LOCATION_HEADER);
-    // }
-    //
-    // const preload = getHeader(response, PRELOAD_HEADER);
-    // if (preload) {
-    //     const links = JSON.parse(preload);
-    //
-    //     response.headers['link'] = links.map(link => {
-    //         let value;
-    //         if (typeof link === 'string') {
-    //             value = `<${link}>; rel=preload`;
-    //         } else {
-    //             const flags = Object.keys(link).filter(k => k !== 'href')
-    //                 .map(key => `${key}="${link[key]}"`);
-    //             value = `<${link.href}>; rel=preload`;
-    //             if (flags.length > 0) {
-    //                 value = `${value}; ${flags.join('; ')}`;
-    //             }
-    //         }
-    //         return {
-    //             key: 'Link',
-    //             value: value,
-    //         }
-    //     });
-    //
-    //     removeHeader(response, PRELOAD_HEADER);
-    // }
-    //
-    // setHeader(response, 'Access-Control-Allow-Origin', '*');
-    // setHeader(response, 'Timing-Allow-Origin', '*');
-    // setHeader(response, 'Access-Control-Allow-Methods', 'GET, HEAD');
-    // setHeader(response, 'Access-Control-Max-Age', '86400');
-    //
-    // removeHeader(response, 'x-amz-version-id');
 
     console.log('Sending response', JSON.stringify(response, null, 2));
     callback(null, response);
@@ -123,6 +76,3 @@ function setHeader(response, name, value) {
     }];
 }
 
-function removeHeader(response, name) {
-    delete response.headers[name.toLowerCase()];
-}
