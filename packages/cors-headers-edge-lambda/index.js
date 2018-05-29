@@ -29,16 +29,6 @@ exports.handler = (event, context, callback) => {
     const response = {};
 
     let status = getHeader(s3Response, 'x-amz-meta-*status*') || s3Response.status;
-    const redirect = getHeader(s3Response, 'Website-Redirect-Location');
-
-    if (redirect) {
-        if (!status) {
-            status = 302;
-        }
-        setHeader(s3Response, 'Location', redirect);
-    }
-
-    response.status = status;
 
     response.headers = Object.keys(s3Response.headers)
         .filter(it => it.indexOf(HEADER_PREFIX) === 0)
@@ -58,6 +48,18 @@ exports.handler = (event, context, callback) => {
     if (type) {
         response.headers['content-type'] = [ {key: 'Content-Type', value: type } ]
     }
+
+    const redirect = getHeader(s3Response, 'Website-Redirect-Location');
+
+    if (redirect) {
+        if (!status) {
+            status = 302;
+        }
+        setHeader(response, 'Location', redirect);
+    }
+
+    response.status = status;
+
 
     // const redirectCode = getHeader(response, REDIRECT_CODE_HEADER);
     // const redirectLocation = getHeader(response, REDIRECT_LOCATION_HEADER);
