@@ -21,6 +21,12 @@ const expect = require('chai').expect;
 
 const index = require('../index');
 
+const fs = require('fs-extra');
+const path = require('path');
+const promisify = require('util').promisify;
+
+const handlePromise = promisify(index.handler);
+
 describe('Header Modifier Lambda', () => {
     describe('Normal Operation', () => {
         it('Passes through the status', done => {
@@ -53,6 +59,36 @@ describe('Header Modifier Lambda', () => {
             });
         });
     });
+
+    describe('mock requests', () => {
+
+        const requestDir = path.join(__dirname, 'requests');
+        const files = fs.readdirSync(requestDir);
+
+        files.map(it => path.join(requestDir, it)).forEach(function (file) {
+            it(`should work for ${path.basename(file)}`, async function () {
+                console.log(file);
+                const testCase = await fs.readJson(file);
+
+                const response = await handlePromise(testCase.request, {});
+
+                expect(response).to.deep.equal(testCase.response);
+
+                // return new Promise((resolve, reject) => {
+                //     index.handler(testCase.request, {}, function(error, result) {
+                //         if (error) {
+                //             return error;
+                //         }
+                //         resolve();
+                //     });
+                // });
+
+            });
+        });
+
+
+    });
+
 });
 
 
@@ -73,6 +109,10 @@ function event(response) {
         Records: [
             {
                 cf: {
+                    request: {
+                        method: 'GET',
+                        uri: '/test/path',
+                    },
                     response: {
                         status: status,
                         headers: amazonHeaders

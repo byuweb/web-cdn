@@ -25,6 +25,10 @@ const HEADER_PREFIX_LENGTH = HEADER_PREFIX.length;
 
 exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
+    const request = event.Records[0].cf.request;
+
+    console.log(`${request.method} ${request.uri}`);
+
     const response = event.Records[0].cf.response;
 
     let status = getHeader(response, STATUS_HEADER) || response.status;
@@ -43,10 +47,10 @@ exports.handler = (event, context, callback) => {
 
         if (key.indexOf(HEADER_PREFIX) === 0) {
             const fixedKey = key.substring(HEADER_PREFIX_LENGTH);
-            response.headers[fixedKey] = values.map(([k, v]) => {
+            response.headers[fixedKey] = values.map(it => {
                 return {
-                    key: k.substring(HEADER_PREFIX_LENGTH),
-                    value: v
+                    key: it.key.substring(HEADER_PREFIX_LENGTH),
+                    value: it.value
                 };
             });
         } else if (key.indexOf('x-amz') !== 0) {

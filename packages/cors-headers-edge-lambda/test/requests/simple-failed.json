@@ -1,0 +1,241 @@
+{
+  "response": {
+    "headers": {
+      "accept-ranges": [
+        {
+          "key": "Accept-Ranges",
+          "value": "bytes"
+        }
+      ],
+      "cache-control": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31557600, s-maxage=31557600, immutable"
+        }
+      ],
+      "content-length": [
+        {
+          "key": "Content-Length",
+          "value": "6698"
+        }
+      ],
+      "content-type": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
+      ],
+      "date": [
+        {
+          "key": "Date",
+          "value": "Wed, 30 May 2018 03:22:27 GMT"
+        }
+      ],
+      "etag": [
+        {
+          "key": "ETag",
+          "value": "\"268e05a692880484d90a0c6b73a0fd3f\""
+        }
+      ],
+      "last-modified": [
+        {
+          "key": "Last-Modified",
+          "value": "Tue, 29 May 2018 21:24:07 GMT"
+        }
+      ],
+      "server": [
+        {
+          "key": "Server",
+          "value": "AmazonS3"
+        }
+      ],
+      "access-control-allow-methods": [
+        {
+          "key": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        }
+      ],
+      "access-control-allow-origin": [
+        {
+          "key": "access-control-allow-origin",
+          "value": "*"
+        }
+      ],
+      "access-control-max-age": [
+        {
+          "key": "access-control-max-age",
+          "value": "86400"
+        }
+      ],
+      "timing-allow-origin": [
+        {
+          "key": "timing-allow-origin",
+          "value": "*"
+        }
+      ],
+      "x-cdn-ver": [
+        {
+          "key": "x-cdn-ver",
+          "value": "release v1.2.4 3663f29ea5"
+        }
+      ]
+    },
+    "status": "200",
+    "statusDescription": "OK"
+  },
+  "request": {
+    "Records": [
+      {
+        "cf": {
+          "config": {
+            "distributionDomainName": "d295p9wbznbstc.cloudfront.net",
+            "distributionId": "E2UZR118OCYZS4",
+            "eventType": "origin-response"
+          },
+          "request": {
+            "clientIp": "2605:a601:5db:6500:352f:2687:234c:2fbd",
+            "headers": {
+              "host": [
+                {
+                  "key": "Host",
+                  "value": "web-community-cdn-stg-contents-us-east-1-818272543125.s3.amazonaws.com"
+                }
+              ],
+              "user-agent": [
+                {
+                  "key": "User-Agent",
+                  "value": "Amazon CloudFront"
+                }
+              ],
+              "via": [
+                {
+                  "key": "Via",
+                  "value": "2.0 9a77abddbf50889810fa780b533737c2.cloudfront.net (CloudFront)"
+                }
+              ],
+              "x-forwarded-for": [
+                {
+                  "key": "X-Forwarded-For",
+                  "value": "2605:a601:5db:6500:352f:2687:234c:2fbd"
+                }
+              ]
+            },
+            "method": "HEAD",
+            "origin": {
+              "s3": {
+                "authMethod": "none",
+                "customHeaders": {},
+                "domainName": "web-community-cdn-stg-contents-us-east-1-818272543125.s3.amazonaws.com",
+                "path": ""
+              }
+            },
+            "querystring": "",
+            "uri": "/byu-theme-components/1.2.4/byu-theme-components.js"
+          },
+          "response": {
+            "headers": {
+              "accept-ranges": [
+                {
+                  "key": "Accept-Ranges",
+                  "value": "bytes"
+                }
+              ],
+              "cache-control": [
+                {
+                  "key": "Cache-Control",
+                  "value": "public, max-age=31557600, s-maxage=31557600, immutable"
+                }
+              ],
+              "content-length": [
+                {
+                  "key": "Content-Length",
+                  "value": "6698"
+                }
+              ],
+              "content-type": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/javascript"
+                }
+              ],
+              "date": [
+                {
+                  "key": "Date",
+                  "value": "Wed, 30 May 2018 03:22:27 GMT"
+                }
+              ],
+              "etag": [
+                {
+                  "key": "ETag",
+                  "value": "\"268e05a692880484d90a0c6b73a0fd3f\""
+                }
+              ],
+              "last-modified": [
+                {
+                  "key": "Last-Modified",
+                  "value": "Tue, 29 May 2018 21:24:07 GMT"
+                }
+              ],
+              "server": [
+                {
+                  "key": "Server",
+                  "value": "AmazonS3"
+                }
+              ],
+              "x-amz-id-2": [
+                {
+                  "key": "x-amz-id-2",
+                  "value": "0cQBNj3VO/eevQEh6Po/jwesY2bklgbTj9WCYZJCy8V95pvrNd7/Tz7+lHwkKr9IJAvygO91TZo="
+                }
+              ],
+              "x-amz-meta-*header*access-control-allow-methods": [
+                {
+                  "key": "x-amz-meta-*header*access-control-allow-methods",
+                  "value": "GET, HEAD"
+                }
+              ],
+              "x-amz-meta-*header*access-control-allow-origin": [
+                {
+                  "key": "x-amz-meta-*header*access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "x-amz-meta-*header*access-control-max-age": [
+                {
+                  "key": "x-amz-meta-*header*access-control-max-age",
+                  "value": "86400"
+                }
+              ],
+              "x-amz-meta-*header*timing-allow-origin": [
+                {
+                  "key": "x-amz-meta-*header*timing-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "x-amz-meta-*header*x-cdn-ver": [
+                {
+                  "key": "x-amz-meta-*header*x-cdn-ver",
+                  "value": "release v1.2.4 3663f29ea5"
+                }
+              ],
+              "x-amz-request-id": [
+                {
+                  "key": "x-amz-request-id",
+                  "value": "BCDCA62EDD6EE96F"
+                }
+              ],
+              "x-amz-version-id": [
+                {
+                  "key": "x-amz-version-id",
+                  "value": "RRqaM5oSpzJW6AFRf.b4GCyHfk7EuEv8"
+                }
+              ]
+            },
+            "status": "200",
+            "statusDescription": "OK"
+          }
+        }
+      }
+    ]
+  }
+}
