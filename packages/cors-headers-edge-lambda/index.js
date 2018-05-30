@@ -23,6 +23,8 @@ const STATUS_HEADER = 'x-amz-meta-*status*';
 const HEADER_PREFIX = 'x-amz-meta-*header*';
 const HEADER_PREFIX_LENGTH = HEADER_PREFIX.length;
 
+const REMOVED_HEADERS = ['date', 'last-modified', 'server'];
+
 exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
     const request = event.Records[0].cf.request;
@@ -53,7 +55,7 @@ exports.handler = (event, context, callback) => {
                     value: it.value
                 };
             });
-        } else if (key.indexOf('x-amz') !== 0) {
+        } else if (key.indexOf('x-amz') !== 0 && !REMOVED_HEADERS.includes(key)) {
             continue;
         }
         delete response.headers[key];

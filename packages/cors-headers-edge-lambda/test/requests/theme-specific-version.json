@@ -25,28 +25,10 @@
           "value": "application/javascript"
         }
       ],
-      "date": [
-        {
-          "key": "Date",
-          "value": "Wed, 30 May 2018 03:22:27 GMT"
-        }
-      ],
       "etag": [
         {
           "key": "ETag",
           "value": "\"268e05a692880484d90a0c6b73a0fd3f\""
-        }
-      ],
-      "last-modified": [
-        {
-          "key": "Last-Modified",
-          "value": "Tue, 29 May 2018 21:24:07 GMT"
-        }
-      ],
-      "server": [
-        {
-          "key": "Server",
-          "value": "AmazonS3"
         }
       ],
       "access-control-allow-methods": [
