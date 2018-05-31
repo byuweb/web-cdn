@@ -57,9 +57,12 @@ Mappings:
       max: 3600
       min: 0
     stg:
-      default: 30
-      max: 300
+      default: 600
+      max: 3600
       min: 0
+#      default: 30
+#      max: 300
+#      min: 0
     dev:
       default: 30
       max: 300
@@ -69,8 +72,10 @@ Mappings:
       user: 3600
       cache: 300
     stg:
-      user: 300
-      cache: 60
+      user: 3600
+      cache: 300
+#      user: 300
+#      cache: 60
     dev:
       user: 60
       cache: 60
