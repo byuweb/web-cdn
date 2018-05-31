@@ -55,7 +55,7 @@ exports.handler = (event, context, callback) => {
                     value: it.value
                 };
             });
-        } else if (key.indexOf('x-amz') !== 0 && !REMOVED_HEADERS.includes(key)) {
+        } else if (key.indexOf('x-amz-meta') !== 0 && !REMOVED_HEADERS.includes(key)) {
             continue;
         }
         delete response.headers[key];
