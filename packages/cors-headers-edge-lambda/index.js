@@ -16,6 +16,8 @@
  */
 "use strict";
 
+console.log('BOOTING');
+
 const REDIRECT_LOCATION_HEADER = 'x-amz-website-redirect-location';
 
 const STATUS_HEADER = 'x-amz-meta-*status*';
@@ -25,7 +27,13 @@ const HEADER_PREFIX_LENGTH = HEADER_PREFIX.length;
 
 const REMOVED_HEADERS = ['date', 'last-modified', 'server'];
 
+let cold = true;
+
 exports.handler = (event, context, callback) => {
+    const isColdStart = cold;
+    cold = false;
+
+    const start = Date.now();
     console.log('Incoming Event', JSON.stringify(event, null, 2));
     const request = event.Records[0].cf.request;
 
@@ -64,6 +72,10 @@ exports.handler = (event, context, callback) => {
     response.status = status;
 
     console.log('Sending response', JSON.stringify(response, null, 2));
+    response.headers['x-lambda'] = [{
+        key: 'x-lambda',
+        value: `${isColdStart ? 'cold': 'hot'} ${Date.now() - start}`
+    }];
     callback(null, response);
 };
 
@@ -82,3 +94,4 @@ function setHeader(response, name, value) {
     }];
 }
 
+console.log('BOOTED');
