@@ -260,6 +260,17 @@ Resources:
           LambdaFunctionAssociations:
           - EventType: origin-response
             LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
+        CacheBehaviors:
+        - PathPattern: '/redirects/*'
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: only-origin
+          ViewerProtocolPolicy: redirect-to-https
+          LambdaFunctionAssociations:
+          - EventType: origin-request
+            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
 #        CacheBehaviors:
 #        - PathPattern: '/*/latest/*'
 #          AllowedMethods: [GET, HEAD, OPTIONS]
@@ -356,8 +367,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${CDNName}-edge-alias-resolver-${Environment}"
       CodeUri: ./../packages/alias-resolver-lambda/
-      Handler: index.handler
-      Runtime: nodejs6.10
+      Handler: index.redirectTest
+      Runtime: nodejs8.10
       MemorySize: 512
       Timeout: 20
       Role:

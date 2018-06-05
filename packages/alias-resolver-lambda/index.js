@@ -16,8 +16,15 @@
  */
 "use strict";
 
-const fetch = require('node-fetch');
+// const fetch = require('node-fetch');
+const axios = require('axios');
 const config = require('./config.json');
+
+const brotli = require('brotli');
+const iltorb = require('iltorb');
+
+const zlib = require('zlib');
+const gunzip = promisify(zlib.gunzip);
 
 const ALIAS_REGEX = /^\/(.*?)\/((?:(?:\d+\.(?:\d+|x)\.x)|latest|unstable))\//;
 
@@ -28,6 +35,105 @@ let oldAliases;
 let aliasCacheTime = 0;
 
 const MAX_ALIAS_CACHE_TIME_MILLIS = 60 * 1000;
+
+exports.redirectTest = async (event, context) => {
+    console.log('Incoming Event', JSON.stringify(event, null, 2));
+    const request = event.Records[0].cf.request;
+
+    const uri = request.uri;
+
+    const host = resolveHostName(request.headers.host[0].value, true);
+
+    if (uri.startsWith('/redirects/')) {
+        console.log('Not a redirect request; passing through');
+        return request;
+    }
+
+    const parts = uri.split('/').filter(it => !!it);
+
+    const file = parts[1];
+
+    if (file.startsWith('text')) {
+        return await handleText(host, uri);
+    } else if (file.startsWith('json-array')) {
+        return await handleJsonArray(host, uri);
+    // } else if (file.startsWith('json-object')) {
+    //     return await handleJsonObject(host, uri);
+    } else {
+        console.log('Not a known redirect type; passing through');
+        return request;
+    }
+};
+
+async function request(host, uri, parser) {
+    const start = Date.now();
+    const encoding = encodingFor(uri);
+    const resp = await axios({
+        url: `https://${host}${uri}`,
+        responseType: encoding ? 'arraybuffer' : 'text'
+    });
+    const data = resp.data;
+    let text;
+    if (encoding === 'br') {
+        text = (await brotli.decompress(data)).toString('utf8');
+    } else if (encoding === 'il') {
+        text = (await iltorb.decompress(data)).toString('utf8');
+    } else if (encoding === 'gz') {
+        text = (await gunzip(data)).toString('utf8');
+    } else {
+        text = data;
+    }
+    const parsed = parser(text);
+
+    return {
+        status: '200',
+        statusDescription: 'OK',
+        headers: {
+            'content-type': [{
+                key: 'Content-Type',
+                value: 'application/json'
+            }],
+            'cache-control': [{
+                key: 'Cache-Control',
+                value: 'no-cache'
+            }]
+        },
+        body: JSON.stringify({
+            duration: Date.now() - start,
+            redirects: parsed,
+        }),
+    };
+}
+
+function encodingFor(uri) {
+    if (uri.endsWith('.br')) {
+        return 'brotli';
+    } else if (uri.endsWith('.il')) {
+        return 'iltorb';
+    } else if (uri.endsWith('.gz')) {
+        return 'gzip';
+    }
+    return null;
+}
+
+async function handleText(host, uri) {
+    return request(host, uri, text => {
+        text.split('\n').map(line => {
+            const [type, from, status, to, cache] = line.split('\t');
+            return {type, from, to, status, cache};
+        });
+    });
+}
+
+async function handleJsonArray(host, uri) {
+    return request(host, uri, text => {
+        return JSON.parse(text);
+    });
+}
+
+async function handleJsonObject(host, uri) {
+
+}
 
 exports.handler = (event, context, callback) => {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
