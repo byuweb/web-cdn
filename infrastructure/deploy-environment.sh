@@ -62,6 +62,9 @@ aws cloudformation validate-template \
 
 echo Packaging to s3://${stagingBucket}/${stagingBucketPrefix}
 
+## Hack to work around bugs in node8 with file timestamps
+find "${working}/*" -mtime +10950 -exec touch {} \;
+
 aws cloudformation package \
     --template-file ${renderedCfnFile} \
     --s3-bucket ${stagingBucket} \

@@ -22,6 +22,7 @@ phases:
     commands:
       - lerna exec -- ./codebuild.sh
       - echo $EXTRA_TAGS
+      - find ./* -mtime +10950 -exec touch {} \;
       - infrastructure/deploy-environment.sh $CDN_NAME $ENV $ROOT_DNS $ACCOUNT_STACK_NAME $CERTIFICATE_ARN $CONFIG_REPO $CONFIG_BRANCH "$EXTRA_TAGS"
 
 

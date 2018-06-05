@@ -9,5 +9,6 @@ if [ -z "$ROOT_DNS" ]; then
 else
   echo "Writing config file with rootDns = $ROOT_DNS";
   echo "{\"rootDns\": \"$ROOT_DNS\"}" > ./config.json;
+  touch ./config.json
 fi
 
