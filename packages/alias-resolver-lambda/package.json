@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "install": "find ./node_modules/* -mtime +10950 -exec touch {} \\;",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Joseph Moore <joseph_moore@byu.edu>",

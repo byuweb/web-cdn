@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "install": "find ./node_modules/* -mtime +10950 -exec touch {} \\;",
     "test": "mocha",
     "watch:test": "mocha --watch --reporter min"
   },

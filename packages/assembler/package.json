@@ -7,6 +7,7 @@
     "cdn-assembler": "bin/cdn-assembler.js"
   },
   "scripts": {
+    "install": "find ./node_modules/* -mtime +10950 -exec touch {} \\;",
     "test": "mocha --recursive"
   },
   "engines": {

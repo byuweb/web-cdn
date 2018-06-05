@@ -1,5 +1,8 @@
 {
 	"private": true,
+	"scripts": {
+		"install": "find ./node_modules/* -mtime +10950 -exec touch {} \\;"
+	},
 	"devDependencies": {
 		"lerna": "^2.4.0"
 	}
