@@ -31,6 +31,7 @@ const os = require('os');
 const PQueue = require('p-queue');
 
 const uploadQueue = new PQueue({concurrency: os.cpus().length});
+const copyQueue = new PQueue({concurrency: os.cpus().length * 4});
 
 const s3 = require('s3').createClient(s3Opts);
 const runCommand = require('./util/run-command');
@@ -70,7 +71,7 @@ module.exports.uploadFile1 = async function uploadFiles(oldManifest, newManifest
 
     log.info('Starting Sync jobs:\n\t' + sync.map(each => each.to).join('\n\t'));
 
-    await batch(sync, each => {
+    await batch(uploadQueue, sync, each => {
         return syncDir(bucket, each.from, each.to, each.metadata, each.cacheControl, dryRun)
     });
 
@@ -78,7 +79,7 @@ module.exports.uploadFile1 = async function uploadFiles(oldManifest, newManifest
     await copyLargeFiles(largeFileFollowUp, dryRun);
 
     log.info('Starting Remove jobs:\n\t' + remove.join('\n\t'));
-    await batch(remove, each => {
+    await batch(uploadQueue, remove, each => {
         return deleteDir(bucket, each, dryRun);
     });
 
@@ -118,7 +119,7 @@ exports.uploadFiles2 = async function (bucket, files, actions, manifest, dryRun)
 async function uploadContents(bucket, files) {
     const copied = new Set();
 
-    return batch(files, async file => {
+    return batch(uploadQueue, files, async file => {
         const sha = file.fileSha512;
 
         if (copied.has(sha)) {
@@ -154,7 +155,7 @@ async function uploadFileContents(bucket, s3Key, file) {
 }
 
 async function copyFilesToDestination(bucket, files) {
-    return batch(files, async file => {
+    return batch(copyQueue, files, async file => {
         const sha = file.fileSha512;
         if (!sha) {
             return;
@@ -178,9 +179,11 @@ async function copyFilesToDestination(bucket, files) {
             config.WebsiteRedirectLocation = file.meta.redirect.location;
         }
 
+        log.debug(`Copying ${config.Key}`);
         await s3Client.copyObject(config).promise();
 
         if (file.meta.tags) {
+            log.debug(`Tagging ${config.Key}`);
             await s3Client.putObjectTagging({
                 Bucket: bucket,
                 Key: file.cdnPath,
@@ -195,6 +198,8 @@ async function copyFilesToDestination(bucket, files) {
                 }
             }).promise();
         }
+
+        log.debug(`Finished Copying ${config.Key}`);
     });
 }
 
@@ -209,8 +214,8 @@ function metadataForFile(file) {
         }, {});
 }
 
-async function batch(items, action) {
-    return uploadQueue.addAll(items.map(queuedAction));
+async function batch(queue, items, action) {
+    return queue.addAll(items.map(queuedAction));
 
     function queuedAction(item) {
         return () => action(item);

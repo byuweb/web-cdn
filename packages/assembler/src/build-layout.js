@@ -20,12 +20,13 @@
 const fs = require('fs-extra');
 const {promisify} = require('util');
 const path = require('path');
-const zlib = require('zlib');
 const brotli = require('iltorb');
 const mime = require('mime');
 const moment = require('moment-timezone');
+const deepcopy = require('deepcopy');
 
-const gzip = promisify(zlib.gzip);
+const zlib = require('zlib');
+const gzipIt = promisify(zlib.gzip);
 
 const sets = require('./util/sets');
 const globs = require('./util/globs');
@@ -35,10 +36,13 @@ const util = require('./util/util');
 
 const log = require('winston');
 
+const CACHE_CONTROL_IMMUTABLE = 'public, max-age=31557600, s-maxage=31557600, immutable';
+const CACHE_CONTROL_FIVE_MINUTES = 'public, max-age=300, s-maxage=300';
+const CACHE_CONTROL_ONE_HOUR = 'public, max-age=3600, s-maxage=900';
+const CACHE_CONTROL_ONE_MINUTE = 'public, max-age=60, s-maxage=0';
+
 module.exports = async function buildLayout(oldManifest, newManifest, actions, sourceDirs, cdnHost) {
     const files = [];
-
-    const sizeCache = {};
 
     for (const [libId, lib] of Object.entries(newManifest.libraries)) {
         let libSource = sourceDirs[libId];
@@ -51,190 +55,108 @@ module.exports = async function buildLayout(oldManifest, newManifest, actions, s
             return;
         }
 
-        const aliasesReversed = invertMap(lib.aliases);
-
-
         const provider = providers.getProvider(lib.source, lib.lib_config);
 
         for (const verId of versionsToCopy) {
-            log.debug(`Processing ${libId}@${versionsToCopy}`);
             let ver = lib.versions.find(v => v.name === verId);
-            let srcDir = libSource[ver.ref];
-            const verPrefix = prefixFor(libId, ver);
-
-            const versionFiles = [];
-
-            const cacheControl = cacheControlFor(libId, ver);
-            const aliasCacheControl = aliasCacheControlFor(libId, ver);
-
-            for (let r of ver.config.resources) {
-                log.debug(`${libId}@${versionsToCopy} Processing resources at ${r.src}`);
-                let dest = r.dest ? path.join(verPrefix, r.dest) : verPrefix;
-
-                if (isSuspiciousPath(srcDir, r.src)) {
-                    throw Error(`Suspicious path pattern '${r.src}' in ${libId}@${verId}`);
-                }
-
-                let renameRules = (r.rename || []).map(rule => {
-                    let {regex: from, to} = rule;
-                    return {regex: new RegExp(from), to};
-                });
-
-                let globMatch = globs.match(r.src, {cwd: srcDir, root: srcDir, nodir: true});
-
-                let globBase = globMatch.base;
-
-                let toMove = await globMatch;
-
-                let moves = toMove.map(name => {
-                    let from = path.join(srcDir, name);
-                    let toBase = name.replace(globBase, "");
-                    let to = path.join(dest, toBase);
-
-                    let renames = renameRules.filter(r => {
-                        return toBase.match(r.regex);
-                    });
-                    if (renames.length === 0) {
-                        return [{
-                            name: toBase,
-                            from,
-                            to
-                        }];
-                    } else {
-                        return renames.map(r => {
-                            const renamed = toBase.replace(r.regex, r.to);
-                            return {
-                                name: renamed,
-                                from,
-                                to: path.join(dest, renamed)
-                            }
-                        });
-                    }
-                }).reduce((acc, each) => {
-                    return each.concat(acc || []);
-                });
-
-                const mapped = await Promise.all(moves.map(async (it) => {
-                    const from = it.from;
-                    const type = mimeTypeFor(from);
-                    const stats = await fs.stat(from);
-                    const content = await fs.readFile(from);
-
-                    const hashes = hashesFor(content, ['sha256', 'sha384', 'sha512']);
-
-                    const sha256 = hashes.sha256.hex;
-
-                    let gzipped, brotlied;
-
-                    log.debug('Start zipping', from);
-                    if (sha256 in sizeCache) {
-                        [gzipped, brotlied] = await sizeCache[sha256];
-                    } else {
-                        const promise = sizeCache[sha256] = Promise.all([
-                            await gzip(content),
-                            await brotli.compress(content, {mode: brotliModeFor(type)})
-                        ]);
-                        [gzipped, brotlied] = await promise;
-                    }
-                    log.debug('Finished zipping');
-
-                    return {
-                        name: it.name,
-                        contentPath: from,
-                        cdnPath: it.to,
-                        type,
-                        size: {
-                            unencoded: stats.size,
-                            gzip: gzipped.length,
-                            br: brotlied.length,
-                        },
-                        hashes,
-                        meta: {
-                            cacheControl: cacheControl,
-                            headers: {
-                                'Timing-Allow-Origin': '*',
-                                'Access-Control-Allow-Origin': '*',
-                                'Access-Control-Allow-Methods': 'GET, HEAD',
-                                'Access-Control-Max-Age': '86400',
-                                'X-CDN-Ver': `${ver.type} ${ver.ref} ${ver.source_sha.substr(0, 10)}`
-                                //TODO: Put awesomeness like 'Link' here
-                            },
-                            tags: {
-                                'CDN-Version-Ref': ver.ref,
-                                'CDN-Version-Type': ver.type,
-                                'CDN-Version-Sha': ver.source_sha,
-                            }
-                        },
-                    }
-                }));
-
-                versionFiles.push(...mapped);
-            }
-
-            log.debug('Fetching Readme');
-            const readme = await provider.fetchReadme(ver.ref);
-
-            log.debug('Calculating meta files');
-            const metaFiles = getMetaFiles(libId, ver, verPrefix, versionFiles, readme, cacheControl);
-
-            versionFiles.push(...metaFiles);
-
-            files.push(...versionFiles);
-
-            const aliases = aliasesReversed[verId];
-
-            if (aliases) {
-                aliases.forEach(alias => {
-                    const aliasPrefix = `${libId}/${alias}/`;
-
-                    const aliasFiles = versionFiles.map(file => {
-                        return {
-                            name: file.name,
-                            cdnPath: aliasPrefix + file.name,
-                            type: file.type,
-                            meta: {
-                                cacheControl: aliasCacheControl,
-                                redirect: {
-                                    status: 302,
-                                    location: '/' + file.cdnPath
-                                },
-                                headers: file.meta.headers,
-                                tags: Object.assign({}, file.tags, {
-                                    'CDN-Alias': alias
-                                })
-                            }
-                        };
-                    });
-
-                    files.push(...aliasFiles);
-
-                });
-            }
+            files.push(...await filesForVersion(provider, libId, lib, verId, ver, libSource[ver.ref]))
         }
     }
 
     files.forEach(it => {
-       let sha = 'empty';
-       if (it.hashes) {
-           sha = it.hashes.sha512.hex;
-       } else if (it.contents) {
-           sha = util.hash('sha512', Buffer.from(it.contents));
-       }
-       it.fileSha512 = sha;
+        let sha = 'empty';
+        if (it.hashes) {
+            sha = it.hashes.sha512.hex;
+        } else if (it.contents) {
+            sha = util.hash('sha512', Buffer.from(it.contents));
+        }
+        it.fileSha512 = sha;
     });
+
+    await fs.writeJson('./redirects.json', redirectList(newManifest));
 
     return files;
 };
 
-function invertMap(object) {
-    return Object.entries(object).reduce((inverted, [alias, target]) => {
-        let array = inverted[target];
-        if (!array) {
-            array = inverted[target] = [];
+async function computeMovesForResources(libId, verId, ver, verPrefix, srcDir, resource) {
+    log.debug(`${libId}@${verId} Processing resources at ${resource.src}`);
+    let dest = resource.dest ? path.join(verPrefix, resource.dest) : verPrefix;
+
+    if (isSuspiciousPath(srcDir, resource.src)) {
+        throw Error(`Suspicious path pattern '${resource.src}' in ${libId}@${verId}`);
+    }
+
+    let renameRules = (resource.rename || []).map(rule => {
+        let {regex: from, to} = rule;
+        return {regex: new RegExp(from), to};
+    });
+
+    let globMatch = globs.match(resource.src, {cwd: srcDir, root: srcDir, nodir: true});
+
+    let globBase = globMatch.base;
+
+    let toMove = await globMatch;
+
+    return flatMap(toMove, name => {
+        let from = path.join(srcDir, name);
+        let toBase = name.replace(globBase, "");
+        let to = path.join(dest, toBase);
+
+        let renames = renameRules.filter(r => {
+            return toBase.match(r.regex);
+        });
+        if (renames.length === 0) {
+            return [{
+                name: toBase,
+                from,
+                to
+            }];
+        } else {
+            return renames.map(r => {
+                const renamed = toBase.replace(r.regex, r.to);
+                return {
+                    name: renamed,
+                    from,
+                    to: path.join(dest, renamed)
+                }
+            });
         }
-        array.push(alias);
-        return inverted;
-    }, {});
+    });
+}
+
+function flatMap(array, func) {
+    return array.map(func).reduce((acc, it) => acc.concat(it), []);
+}
+
+async function filesForVersion(provider, libId, lib, verId, ver, srcDir) {
+    log.debug(`Processing ${libId}@${verId}`);
+    const verPath = ver.path;
+
+    const sourceFiles = [];
+
+    const cacheControl = cacheControlFor(libId, ver);
+
+    for (let r of ver.config.resources) {
+        const sources = await computeMovesForResources(libId, verId, ver, verPath, srcDir, r);
+
+        sourceFiles.push(...sources);
+    }
+
+    const versionFiles = await Promise.all(sourceFiles.map(async (it) => {
+        return processSourceFile(ver, it, cacheControl)
+    }));
+
+    log.debug('Fetching Readme');
+    const readme = await provider.fetchReadme(ver.ref);
+
+    log.debug('Calculating meta files');
+    const metaFiles = getMetaFiles(libId, ver, verPath, versionFiles, readme, cacheControl);
+
+    versionFiles.push(...metaFiles);
+
+    const aliasFiles = processVersionAliasFiles(libId, lib, ver, verPath, versionFiles);
+
+    return versionFiles.concat(aliasFiles);
 }
 
 function getMetaFiles(libId, ver, prefix, versionFiles, readme, cacheControl) {
@@ -313,20 +235,85 @@ function getMetaFiles(libId, ver, prefix, versionFiles, readme, cacheControl) {
     return files;
 }
 
+async function processSourceFile(ver, file, cacheControl) {
+    const from = file.from;
+    const type = mimeTypeFor(from);
+    const content = await fs.readFile(from);
+
+    const hashes = hashesFor(content, ['sha256', 'sha384', 'sha512']);
+
+    const sha256 = hashes.sha256.hex;
+
+    const size = await getSizeFor(content, type, sha256);
+
+    return {
+        name: file.name,
+        contentPath: from,
+        cdnPath: file.to,
+        type,
+        size,
+        hashes,
+        meta: {
+            cacheControl: cacheControl,
+            headers: {
+                'Timing-Allow-Origin': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD',
+                'Access-Control-Max-Age': '86400',
+                'X-CDN-Ver': `${ver.type} ${ver.ref} ${ver.source_sha.substr(0, 10)}`
+                //TODO: Put awesomeness like 'Link' here
+            },
+            tags: {
+                'CDN-Version-Ref': ver.ref,
+                'CDN-Version-Type': ver.type,
+                'CDN-Version-Sha': ver.source_sha,
+            }
+        },
+    }
+}
+
+function processVersionAliasFiles(libId, lib, ver, verPrefix, verFiles) {
+    let defaultCacheControl = aliasCacheControlFor(libId, ver);
+    return flatMap(Object.entries(ver.aliases), ([aliasName, alias]) => {
+        const aliasPrefix = alias.path;
+        const redirect = alias.redirect;
+        const cacheControl = alias.cache_immutable ? CACHE_CONTROL_IMMUTABLE : defaultCacheControl;
+
+        return verFiles.map(file => {
+            const copy = deepcopy(file);
+            copy.cdnPath = aliasPrefix + file.name;
+            copy.meta.cacheControl = cacheControl;
+
+            copy.meta.tags = Object.assign({}, file.tags, {
+                'CDN-Alias': aliasName
+            });
+
+            if (redirect) {
+                copy.meta.redirect = {
+                    status: 302,
+                    location: '/' + file.cdnPath
+                };
+                delete copy.contentPath;
+                copy.contents = '';
+            }
+            return copy;
+        });
+    });
+}
 
 function cacheControlFor(libId, version) {
     if (version.type === 'release') {
-        return 'public, max-age=31557600, s-maxage=31557600, immutable';
+        return CACHE_CONTROL_IMMUTABLE;
     } else {
-        return 'public, max-age=300, s-maxage=300';
+        return CACHE_CONTROL_FIVE_MINUTES;
     }
 }
 
 function aliasCacheControlFor(libId, version) {
     if (version.type === 'release') {
-        return 'public, max-age=3600, s-maxage=300';
+        return CACHE_CONTROL_ONE_HOUR;
     } else {
-        return 'public, max-age=60, s-maxage=0';
+        return CACHE_CONTROL_ONE_MINUTE;
     }
 }
 
@@ -365,23 +352,6 @@ function isSuspiciousPath(base, pathOrPattern) {
     }
     let norm = path.normalize(path.join(base, pathOrPattern));
     return norm.indexOf(base) !== 0;
-}
-
-
-async function fileSummary(file) {
-    let path = file.path;
-    let stat = file.stats;
-
-    let content = await fs.readFile(path);
-
-    let gzipped = await gzip(content);
-
-    return {
-        type: mimeTypeFor(file.path),
-        size: stat.size,
-        gzip_size: gzipped.length,
-        hashes: hashesFor(content, ['sha256', 'sha384', 'sha512'])
-    };
 }
 
 function mimeTypeFor(file) {
@@ -449,11 +419,51 @@ function getVariant(file) {
     };
 }
 
-function prefixFor(libId, version) {
-    return `${libId}/${versionPath(version)}/`;
+function redirectList(newManifest) {
+    // Object.entries(newManifest.libraries)
+    //     .reduce((redirects, [libId, lib]) => {
+    //
+    //
+    //         return redirects;
+    //     }, {});
+    return flatMap(Object.entries(newManifest.libraries), ([libId, lib]) => {
+        return flatMap(lib.versions, version => {
+            const aliasCache = aliasCacheControlFor(libId, version);
+            return Object.entries(version.aliases)
+                .filter(([aliasName, alias]) => alias.redirect)
+                .map(([aliasName, alias]) => {
+                    return {
+                        type: 'prefix',
+                        from: alias.path,
+                        to: version.path,
+                        status: 302,
+                        cache: aliasCache
+                    }
+                });
+        });
+    });
 }
 
-function versionPath(version) {
-    return version.type === 'branch' ? `experimental/${version.name}` : version.name;
-}
+const sizeCache = {};
 
+async function getSizeFor(content, type, sha) {
+    if (sha in sizeCache) {
+        return sizeCache[sha];
+    }
+    const compressible = isTextMime(type);
+    const unencoded = content.length;
+
+    let gzip, br;
+
+    if (compressible) {
+        gzip = (await gzipIt(content)).length;
+        br = -1;
+        // br = (await brotli.compress(content, {mode: brotliModeFor(type)})).length
+    }
+
+    const result = {compressible, unencoded, gzip, br};
+
+    sizeCache[sha] = result;
+
+    return result;
+}

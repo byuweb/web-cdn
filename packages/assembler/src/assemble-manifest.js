@@ -58,7 +58,11 @@ async function loadLib(id, defn, cdnHost) {
 
     let refs = await provider.listRefs();
 
-    const versions = await Promise.all(refs.map(ref => postProcessRef(id, defn, mainConfig, ref, cdnBase)));
+    const versionNames = refs.map(it => it.name);
+
+    const libAliases = aliases(versionNames);
+
+    const versions = await Promise.all(refs.map(ref => postProcessRef(id, defn, mainConfig, ref, cdnBase, libAliases)));
 
     const deprecated = !!mainConfig.deprecated;
     let deprecationMessage = undefined;
@@ -76,7 +80,7 @@ async function loadLib(id, defn, cdnHost) {
         name: mainConfig.name,
         description: mainConfig.description,
         type: mainConfig.type || 'unknown',
-        aliases: aliases(versions.map(it => it.name)),
+        aliases: libAliases,
         links: await provider.fetchLinks(mainConfig),
         show_in_directory: mainConfig.show_in_directory,
         prerelease: mainConfig.prerelease,
@@ -93,7 +97,7 @@ async function loadLib(id, defn, cdnHost) {
     return libDefinition;
 }
 
-async function postProcessRef(libId, libDefn, libConfig, ref, cdnBase) {
+async function postProcessRef(libId, libDefn, libConfig, ref, cdnBase, libAliases) {
     const path = `/${libId}/${versionPath(ref.name, ref.type)}/`;
 
     const absoluteUrl = new URL(path, cdnBase).toString();
@@ -109,10 +113,39 @@ async function postProcessRef(libId, libDefn, libConfig, ref, cdnBase) {
         result.basic_usage = basic_usage;
     }
 
+    result.aliases = buildVersionAliases(libId, libDefn, ref.name, libAliases);
+
     return result;
 }
 
 function versionPath(version, type) {
     return type === 'branch' ? `experimental/${version}` : version;
+}
+
+function buildVersionAliases(libId, lib, verName, aliases) {
+    let redirect = true;
+    let cacheImmutable = false;
+
+    if (lib.lib_config && lib.lib_config.aliases) {
+        const aliasConfig = lib.lib_config.aliases;
+
+        if (aliasConfig.redirect === false) {
+            redirect = false;
+        }
+        if (aliasConfig.cache && aliasConfig.cache.immutable) {
+            cacheImmutable = true;
+        }
+    }
+
+    return Object.entries(aliases)
+        .filter(([alias, ref]) => verName === ref)
+        .reduce((obj, [alias, ref]) => {
+            obj[alias] = {
+                path: `/${libId}/${alias}/`,
+                redirect,
+                cache_immutable: cacheImmutable
+            };
+            return obj;
+        }, {});
 }
 

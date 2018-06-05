@@ -90,7 +90,7 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     log.info("----- Building CDN Layout -----");
     const filesystem = await buildLayout(oldManifest, newManifest, actions, sourceDirs, cdnHost);
 
-    await fs.writeJson('./filesystem.json', filesystem, {spaces: 2})
+    await fs.writeJson('./filesystem.json', filesystem, {spaces: 2});
 
     // log.info("----- Building Library Meta Files -----");
     // const versionManifests = await buildMeta(newManifest, assembledDir);

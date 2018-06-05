@@ -90,8 +90,8 @@ module.exports = async function assembleArtifacts(manifest, actions, sourceDirs,
                         });
                     }
                 }).reduce((acc, each) => {
-                    return each.concat(acc || []);
-                });
+                    return each.concat(acc);
+                }, []);
 
                 for (let move of moves) {
                     await fsp.copy(move.from, move.to);

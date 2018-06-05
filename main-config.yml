@@ -77,6 +77,10 @@ libraries:
   shared-icons:
     configuration:
       type: 'images'
+      aliases:
+        redirect: false
+        cache:
+          immutable: true
     source: github:byuweb/shared-icons
   byu-theme-style-helpers:
     source: github:byuweb/byu-theme-style-helpers
@@ -102,6 +106,10 @@ libraries:
     source: github:byuweb/hoefler-fonts
     configuration:
       type: 'font'
+      aliases:
+        redirect: false
+        cache:
+          immutable: true
   byu-random-content:
     source: github:byuweb/byu-random-content
     configuration:
