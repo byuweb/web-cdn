@@ -27,16 +27,10 @@ const zlib = require('zlib');
 const promisify = require('util').promisify;
 const gunzip = promisify(zlib.gunzip);
 
-const ALIAS_REGEX = /^\/(.*?)\/((?:(?:\d+\.(?:\d+|x)\.x)|latest|unstable))\//;
-
-const CACHE_TIME_USER = 3600;
-const CACHE_TIME_CACHE = 300;
-
-let oldAliases;
-let aliasCacheTime = 0;
-
 const MAX_ALIAS_CACHE_TIME_MILLIS = 60 * 1000;
 
+let cachedRedirectRules;
+let redirectCacheTime = 0;
 
 exports.handler = function (event, context, callback) {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
@@ -55,7 +49,7 @@ exports.handler = function (event, context, callback) {
 async function redirectTest(request, context) {
     const uri = request.uri;
 
-    const host = resolveHostName(request.headers.host[0].value, false);
+    const host = resolveHostForRequest(request.headers.host[0].value, false);
 
     if (!uri.startsWith('/redirects/')) {
         console.log('Not a redirect request; passing through');
@@ -85,6 +79,7 @@ async function request(host, uri, parser) {
         url: `https://${host}${uri}`,
         responseType: encoding ? 'arraybuffer' : 'text'
     });
+    const requestEnd = Date.now();
     const data = resp.data;
     let text;
     if (encoding === 'brotli') {
@@ -98,7 +93,7 @@ async function request(host, uri, parser) {
     }
 
     const parsed = parser(text);
-
+    const parseEnd = Date.now();
     return {
         status: '200',
         statusDescription: 'OK',
@@ -113,7 +108,11 @@ async function request(host, uri, parser) {
             }]
         },
         body: JSON.stringify({
-            duration: Date.now() - start,
+            timing: {
+                total: parseEnd - start,
+                request: requestEnd - start,
+                parse: parseEnd - requestEnd,
+            },
             redirects: parsed,
         }),
     };
@@ -176,89 +175,6 @@ function parseToTree(array) {
     return {prefixes};
 }
 
-function oldhandleRedirects(event, context, callback) {
-    console.log('Incoming Event', JSON.stringify(event, null, 2));
-    let request = event.Records[0].cf.request;
-
-    let uri = request.uri;
-
-    console.log('Incoming request to', uri);
-
-    let match = ALIAS_REGEX.exec(uri);
-
-    if (!match) {
-        console.log('Not an alias; passing through');
-        callback(null, request);
-    } else {
-        let libId = match[1];
-        let aliasName = match[2];
-
-        console.log(`Appears to be an alias: ${libId}@${aliasName}; getting alias config`);
-        let host = resolveHostName(request.headers.host[0].value, true);
-
-        let aliasConfigUrl = `https://${host}/.cdn-meta/aliases.json`;
-
-        console.log('Loading', aliasConfigUrl);
-
-        getAliasList(host).then(aliases => {
-            console.log('got aliases', aliases);
-
-            let lib = aliases[libId];
-            if (!lib) {
-                console.log(`No lib defined with id ${libId}; passing through`);
-                callback(null, request);
-                return;
-            }
-
-            let version = lib[aliasName];
-            if (!version) {
-                console.log(`No alias defined for ${libId}@${aliasName}; passing through`);
-                callback(null, request);
-                return;
-            }
-
-            let newUri = uri.replace(ALIAS_REGEX, `/$1/${version}/`);
-
-            console.log('Redirecting to', newUri);
-
-            let response = {
-                status: '302',
-                statusDescription: 'Found',
-                headers: {
-                    location: [{
-                        key: 'Location',
-                        value: newUri
-                    }],
-                    'cache-control': [{
-                        key: 'Cache-Control',
-                        value: `public, max-age=${CACHE_TIME_USER}, s-maxage=${CACHE_TIME_CACHE}`
-                    }],
-                    'x-byu-cdn-alias-target': [{
-                        key: 'X-BYU-CDN-Alias-Target',
-                        value: version
-                    }],
-                }
-            };
-            response.headers['access-control-allow-origin'] = [{
-                key: 'Access-Control-Allow-Origin',
-                value: '*'
-            }];
-            response.headers['access-control-allow-methods'] = [{
-                key: 'Access-Control-Allow-Methods',
-                value: 'GET, HEAD'
-            }];
-            response.headers['access-control-max-age'] = [{
-                key: 'Access-Control-Max-Age',
-                value: '86400'
-            }];
-            callback(null, response);
-        }).catch(err => {
-            console.log('Got error', err);
-            callback(err);
-        });
-    }
-}
-
 async function handleRedirects(request, context) {
     const uri = request.uri;
 
@@ -266,11 +182,57 @@ async function handleRedirects(request, context) {
 
     const rules = await getRedirectRules(request);
 
+    const pathParts = uri.split('/').filter(it => it.length > 0);
 
+    const redirect = findRedirect(rules, pathParts);
+
+    if (redirect) {
+        return {
+            status: String(redirect.code),
+            headers: toAmzHeaders({
+                Location: redirect.to,
+                'Cache-Control': redirect.cache,
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD',
+                'Access-Control-Max-Age': '86400',
+                'Timing-Allow-Origin': '*'
+            })
+        }
+    } else {
+        return request;
+    }
 }
 
-let cachedRedirectRules;
-let redirectCacheTime = 0;
+function toAmzHeaders(headers) {
+    return Object.entries(headers)
+        .reduce((agg, {key, value}) => {
+            agg[key.toLowerCase()] = [{
+                key, value
+            }];
+            return agg;
+        }, {});
+}
+
+function findRedirect(rules, pathParts) {
+    const prefixMatch = findRedirectPrefix(rules.prefixes, pathParts);
+    return prefixMatch;
+}
+
+function findRedirectPrefix(prefixRules, pathParts) {
+    let current = prefixRules;
+    let match = null;
+    for (const part of pathParts) {
+        if (part in current) {
+            current = current[part];
+            if ('|target|' in current) {
+                match = current['|target|'];
+            }
+        } else {
+            break;
+        }
+    }
+    return match;
+}
 
 async function getRedirectRules(request) {
     if (cachedRedirectRules && Date.now() < redirectCacheTime + MAX_ALIAS_CACHE_TIME_MILLIS) {
@@ -292,7 +254,7 @@ async function getRedirectRules(request) {
 
     const text = response.data;
 
-    return parseRedirectRules(text);
+    return parseToTree(parseRedirectRules(text));
 }
 
 function parseRedirectRules(text) {
@@ -318,39 +280,3 @@ function resolveHostForRequest(request, canUseCloudfront) {
     return host;
 }
 
-
-function resolveHostName(host, canUseCloudfront) {
-    if (canUseCloudfront && config.rootDns) {
-        return config.rootDns;
-    }
-    if (host.includes(S3_WEBSITE_HOST)) {
-        return host.replace(S3_WEBSITE_HOST, S3_SECURE_HOST);
-    }
-    return host;
-}
-
-function getAliasList(host) {
-    let aliasConfigUrl = `https://${host}/.cdn-meta/aliases.json`;
-
-    if (oldAliases && Date.now() < aliasCacheTime + MAX_ALIAS_CACHE_TIME_MILLIS) {
-        console.log('Aliases are cached');
-        return Promise.resolve(oldAliases);
-    } else {
-        console.log('Cache has expired');
-    }
-
-    console.log('Loading aliases from', aliasConfigUrl);
-
-    return fetch(aliasConfigUrl).then(response => {
-        let aliases = response.json();
-        oldAliases = aliases;
-        aliasCacheTime = Date.now();
-        return aliases;
-    }).catch(err => {
-        if (oldAliases) {
-            console.error('Got error getting alias list, using old version', err);
-            return oldAliases;
-        }
-        throw err;
-    });
-}
