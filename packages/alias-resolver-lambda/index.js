@@ -92,8 +92,6 @@ async function request(host, uri, parser) {
         text = data;
     }
 
-    console.log('text', text.substr(0, 100));
-
     const parsed = parser(text);
 
     return {
