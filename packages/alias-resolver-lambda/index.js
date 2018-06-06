@@ -37,7 +37,14 @@ let aliasCacheTime = 0;
 
 const MAX_ALIAS_CACHE_TIME_MILLIS = 60 * 1000;
 
-exports.redirectTest = async (event, context) => {
+exports.handler = function (event, context, callback) {
+    redirectTest(event, context).then(
+        result => callback(null, result),
+        err => callback(err)
+    );
+};
+
+async function redirectTest(event, context) {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
     const request = event.Records[0].cf.request;
 
@@ -64,7 +71,7 @@ exports.redirectTest = async (event, context) => {
         console.log('Not a known redirect type; passing through');
         return request;
     }
-};
+}
 
 async function request(host, uri, parser) {
     const start = Date.now();
@@ -140,7 +147,7 @@ async function handleJsonObject(host, uri) {
 
 }
 
-exports.handler = (event, context, callback) => {
+function handleRedirects(event, context, callback) {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
     let request = event.Records[0].cf.request;
 
@@ -221,7 +228,7 @@ exports.handler = (event, context, callback) => {
             callback(err);
         });
     }
-};
+}
 
 const S3_WEBSITE_HOST = 's3-website-us-east-1.amazonaws.com';
 const S3_SECURE_HOST = 's3.dualstack.us-east-1.amazonaws.com';

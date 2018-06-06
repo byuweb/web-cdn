@@ -367,7 +367,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${CDNName}-edge-alias-resolver-${Environment}"
       CodeUri: ./../packages/alias-resolver-lambda/
-      Handler: index.redirectTest
+      Handler: index.handler
       Runtime: nodejs8.10
       MemorySize: 512
       Timeout: 20
