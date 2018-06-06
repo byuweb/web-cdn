@@ -50,7 +50,7 @@ async function redirectTest(event, context) {
 
     const uri = request.uri;
 
-    const host = resolveHostName(request.headers.host[0].value, true);
+    const host = resolveHostName(request.headers.host[0].value, false);
 
     if (!uri.startsWith('/redirects/')) {
         console.log('Not a redirect request; passing through');
