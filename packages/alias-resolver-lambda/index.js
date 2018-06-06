@@ -82,11 +82,11 @@ async function request(host, uri, parser) {
     });
     const data = resp.data;
     let text;
-    if (encoding === 'br') {
+    if (encoding === 'brotli') {
         text = (await brotli.decompress(data)).toString('utf8');
-    } else if (encoding === 'il') {
+    } else if (encoding === 'iltorb') {
         text = (await iltorb.decompress(data)).toString('utf8');
-    } else if (encoding === 'gz') {
+    } else if (encoding === 'gzip') {
         text = (await gunzip(data)).toString('utf8');
     } else {
         text = data;
