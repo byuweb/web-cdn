@@ -83,14 +83,16 @@ async function request(host, uri, parser) {
     const data = resp.data;
     let text;
     if (encoding === 'brotli') {
-        text = (await brotli.decompress(data)).toString('utf8');
+        text = Buffer.from((await brotli.decompress(data)).buffer).toString('utf8');
     } else if (encoding === 'iltorb') {
-        text = (await iltorb.decompress(data)).toString('utf8');
+        text = Buffer.from((await iltorb.decompress(data)).buffer).toString('utf8');
     } else if (encoding === 'gzip') {
-        text = (await gunzip(data)).toString('utf8');
+        text = Buffer.from((await gunzip(data)).buffer).toString('utf8');
     } else {
         text = data;
     }
+
+    console.log('text', text.substr(0, 100));
 
     const parsed = parser(text);
 
