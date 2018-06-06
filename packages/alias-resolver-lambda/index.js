@@ -39,17 +39,20 @@ const MAX_ALIAS_CACHE_TIME_MILLIS = 60 * 1000;
 
 
 exports.handler = function (event, context, callback) {
-    console.log('Env', process.env);
-    redirectTest(event, context).then(
+    console.log('Incoming Event', JSON.stringify(event, null, 2));
+
+    let request = event.Records[0].cf.request;
+
+    const handler = redirectTest;
+    // const handler = handleRedirects;
+
+    handler(request, context).then(
         result => callback(null, result),
         err => callback(err)
     );
 };
 
-async function redirectTest(event, context) {
-    console.log('Incoming Event', JSON.stringify(event, null, 2));
-    const request = event.Records[0].cf.request;
-
+async function redirectTest(request, context) {
     const uri = request.uri;
 
     const host = resolveHostName(request.headers.host[0].value, false);
@@ -67,8 +70,8 @@ async function redirectTest(event, context) {
         return await handleText(host, uri);
     } else if (file.startsWith('json-array')) {
         return await handleJsonArray(host, uri);
-        // } else if (file.startsWith('json-object')) {
-        //     return await handleJsonObject(host, uri);
+    } else if (file.startsWith('json-object')) {
+        return await handleJsonObject(host, uri);
     } else {
         console.log('Not a known redirect type; passing through');
         return request;
@@ -129,14 +132,25 @@ function encodingFor(uri) {
 
 async function handleText(host, uri) {
     return request(host, uri, text => {
-        text.split('\n').map(line => {
+        const array = text.split('\n').map(line => {
             const [type, from, status, to, cache] = line.split('\t');
             return {type, from, to, status, cache};
         });
+        return parseToTree(array);
     });
 }
 
 async function handleJsonArray(host, uri) {
+    return request(host, uri, text => {
+        let array = text;
+        if (typeof text === 'string') {
+            array = JSON.parse(text);
+        }
+        return parseToTree(array);
+    });
+}
+
+async function handleJsonObject(host, uri) {
     return request(host, uri, text => {
         if (typeof text === 'string') {
             return JSON.parse(text);
@@ -145,11 +159,22 @@ async function handleJsonArray(host, uri) {
     });
 }
 
-async function handleJsonObject(host, uri) {
+function parseToTree(array) {
+    const prefixes = array.filter(it => it.type === 'prefix')
+        .reduce((agg, {from, to, status, cache}) => {
+            const pathParts = from.split('/');
 
+            const leaf = pathParts.reduce((tree, part) => {
+                return tree[part] = tree[part] || {}
+            }, agg);
+
+            leaf['|target|'] = {to, status, cache};
+        }, {});
+
+    return {prefixes};
 }
 
-function handleRedirects(event, context, callback) {
+function oldhandleRedirects(event, context, callback) {
     console.log('Incoming Event', JSON.stringify(event, null, 2));
     let request = event.Records[0].cf.request;
 
@@ -232,8 +257,65 @@ function handleRedirects(event, context, callback) {
     }
 }
 
+async function handleRedirects(request, context) {
+    const uri = request.uri;
+
+    console.log('Incoming request to', uri);
+
+    const rules = await getRedirectRules(request);
+
+
+}
+
+let cachedRedirectRules;
+let redirectCacheTime = 0;
+
+async function getRedirectRules(request) {
+    if (cachedRedirectRules && Date.now() < redirectCacheTime + MAX_ALIAS_CACHE_TIME_MILLIS) {
+        console.log('Redirects are cached');
+        return cachedRedirectRules;
+    }
+
+    console.log('Cache has expired');
+
+    const host = resolveHostForRequest(request, true);
+    const ruleUrl = `https://${host}/.cdn-meta/redirects.txt`;
+
+    console.log('Loading redirects from', ruleUrl);
+
+    const response = await axios.get({
+        url: ruleUrl,
+        responseType: 'text'
+    });
+
+    const text = response.data;
+
+    return parseRedirectRules(text);
+}
+
+function parseRedirectRules(text) {
+    return text.split('\n')
+        .filter(it => !!it)
+        .map(it => it.split('\t'))
+        .map(([type, from, to, status, cache]) => {
+            return {type, from, to, status, cache}
+        });
+}
+
 const S3_WEBSITE_HOST = 's3-website-us-east-1.amazonaws.com';
 const S3_SECURE_HOST = 's3.dualstack.us-east-1.amazonaws.com';
+
+function resolveHostForRequest(request, canUseCloudfront) {
+    if (canUseCloudfront && config.rootDns) {
+        return config.rootDns;
+    }
+    const host = request.headers.host[0].value;
+    if (host.includes(S3_WEBSITE_HOST)) {
+        return host.replace(S3_WEBSITE_HOST, S3_SECURE_HOST);
+    }
+    return host;
+}
+
 
 function resolveHostName(host, canUseCloudfront) {
     if (canUseCloudfront && config.rootDns) {
