@@ -37,7 +37,9 @@ let aliasCacheTime = 0;
 
 const MAX_ALIAS_CACHE_TIME_MILLIS = 60 * 1000;
 
+
 exports.handler = function (event, context, callback) {
+    console.log('Env', process.env);
     redirectTest(event, context).then(
         result => callback(null, result),
         err => callback(err)

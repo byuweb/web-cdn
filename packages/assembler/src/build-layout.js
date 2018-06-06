@@ -41,6 +41,8 @@ const CACHE_CONTROL_FIVE_MINUTES = 'public, max-age=300, s-maxage=300';
 const CACHE_CONTROL_ONE_HOUR = 'public, max-age=3600, s-maxage=900';
 const CACHE_CONTROL_ONE_MINUTE = 'public, max-age=60, s-maxage=0';
 
+const REDIRECTS_PATH = '/.cdn-meta/redirects.txt';
+
 module.exports = async function buildLayout(oldManifest, newManifest, actions, sourceDirs, cdnHost) {
     const files = [];
 
@@ -63,6 +65,8 @@ module.exports = async function buildLayout(oldManifest, newManifest, actions, s
         }
     }
 
+    files.push(getRedirectFile(newManifest));
+
     files.forEach(it => {
         let sha = 'empty';
         if (it.hashes) {
@@ -73,10 +77,32 @@ module.exports = async function buildLayout(oldManifest, newManifest, actions, s
         it.fileSha512 = sha;
     });
 
-    await fs.writeJson('./redirects.json', redirectList(newManifest));
-
     return files;
 };
+
+function getRedirectFile(newManifest) {
+    const redirects = redirectList(newManifest);
+
+    const contents = redirects
+        .map(it => `${it.type}\t${it.from}\t${it.to}\t${it.status}\t${it.cache}`)
+        .join('\n');
+
+    return {
+            name: REDIRECTS_PATH,
+            cdnPath: REDIRECTS_PATH,
+            type: 'text/plain',
+            contents,
+            meta: {
+                CACHE_CONTROL_ONE_HOUR,
+                headers: {
+                    'Timing-Allow-Origin': '*',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, HEAD',
+                    'Access-Control-Max-Age': '86400',
+                },
+            }
+        }
+}
 
 async function computeMovesForResources(libId, verId, ver, verPrefix, srcDir, resource) {
     log.debug(`${libId}@${verId} Processing resources at ${resource.src}`);
@@ -420,12 +446,6 @@ function getVariant(file) {
 }
 
 function redirectList(newManifest) {
-    // Object.entries(newManifest.libraries)
-    //     .reduce((redirects, [libId, lib]) => {
-    //
-    //
-    //         return redirects;
-    //     }, {});
     return flatMap(Object.entries(newManifest.libraries), ([libId, lib]) => {
         return flatMap(lib.versions, version => {
             const aliasCache = aliasCacheControlFor(libId, version);

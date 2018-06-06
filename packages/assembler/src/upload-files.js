@@ -154,6 +154,13 @@ async function uploadFileContents(bucket, s3Key, file) {
     }).promise();
 }
 
+function normalizeS3Key(key) {
+    if (key.startsWith('/')) {
+        return key.substr(1);
+    }
+    return key;
+}
+
 async function copyFilesToDestination(bucket, files) {
     return batch(copyQueue, files, async file => {
         const sha = file.fileSha512;
@@ -166,7 +173,7 @@ async function copyFilesToDestination(bucket, files) {
             CacheControl: file.meta.cacheControl,
             ContentType: file.type,
             CopySource: `/${bucket}/${LARGE_FILE_PREFIX}${sha}`,
-            Key: file.cdnPath,
+            Key: normalizeS3Key(file.cdnPath),
             Metadata: metadataForFile(file),
             MetadataDirective: "REPLACE",
 
