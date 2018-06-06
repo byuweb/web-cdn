@@ -162,7 +162,7 @@ async function handleJsonObject(host, uri) {
 function parseToTree(array) {
     const prefixes = array.filter(it => it.type === 'prefix')
         .reduce((agg, {from, to, status, cache}) => {
-            const pathParts = from.split('/');
+            const pathParts = from.split('/').filter(it => it.length > 0);
 
             const leaf = pathParts.reduce((tree, part) => {
                 return tree[part] = tree[part] || {}
