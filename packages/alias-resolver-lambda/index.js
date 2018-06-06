@@ -24,6 +24,7 @@ const brotli = require('brotli');
 const iltorb = require('iltorb');
 
 const zlib = require('zlib');
+const promisify = require('util').promisify;
 const gunzip = promisify(zlib.gunzip);
 
 const ALIAS_REGEX = /^\/(.*?)\/((?:(?:\d+\.(?:\d+|x)\.x)|latest|unstable))\//;
@@ -44,7 +45,7 @@ exports.redirectTest = async (event, context) => {
 
     const host = resolveHostName(request.headers.host[0].value, true);
 
-    if (uri.startsWith('/redirects/')) {
+    if (!uri.startsWith('/redirects/')) {
         console.log('Not a redirect request; passing through');
         return request;
     }
@@ -57,8 +58,8 @@ exports.redirectTest = async (event, context) => {
         return await handleText(host, uri);
     } else if (file.startsWith('json-array')) {
         return await handleJsonArray(host, uri);
-    // } else if (file.startsWith('json-object')) {
-    //     return await handleJsonObject(host, uri);
+        // } else if (file.startsWith('json-object')) {
+        //     return await handleJsonObject(host, uri);
     } else {
         console.log('Not a known redirect type; passing through');
         return request;
@@ -83,6 +84,7 @@ async function request(host, uri, parser) {
     } else {
         text = data;
     }
+
     const parsed = parser(text);
 
     return {
@@ -127,7 +129,10 @@ async function handleText(host, uri) {
 
 async function handleJsonArray(host, uri) {
     return request(host, uri, text => {
-        return JSON.parse(text);
+        if (typeof text === 'string') {
+            return JSON.parse(text);
+        }
+        return text;
     });
 }
 
