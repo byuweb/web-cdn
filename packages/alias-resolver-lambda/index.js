@@ -169,6 +169,8 @@ function parseToTree(array) {
             }, agg);
 
             leaf['|target|'] = {to, status, cache};
+
+            return agg;
         }, {});
 
     return {prefixes};
