@@ -42,7 +42,7 @@ module.exports = class RedirectHandler {
 
         const host = resolveHostForRequest(request, this.defaultHost, true);
 
-        const rules = this.cache.get(() => this.redirectRulesLoader({host}));
+        const rules = await this.cache.get(() => this.redirectRulesLoader({host}));
 
         const pathParts = uri.split('/').filter(it => it.length > 0);
 
@@ -69,7 +69,7 @@ module.exports = class RedirectHandler {
 
 function toAmzHeaders(headers) {
     return Object.entries(headers)
-        .reduce((agg, {key, value}) => {
+        .reduce((agg, [key, value]) => {
             agg[key.toLowerCase()] = [{
                 key, value
             }];

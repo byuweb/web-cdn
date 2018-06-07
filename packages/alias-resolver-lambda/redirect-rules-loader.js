@@ -28,9 +28,15 @@ module.exports = async function load({host}) {
 
     console.log('Loading redirect rules from', url);
 
-    const response = await axios.get({url, responseType: 'arraybuffer'});
+    const response = await axios.get(url, {responseType: 'arraybuffer'});
 
-    return parseResult(response.data);
+    console.log('Finished getting rules');
+
+    const result = parseResult(response.data);
+
+    console.log('Finished parsing rules');
+
+    return result;
 };
 
 async function parseResult(buf) {
