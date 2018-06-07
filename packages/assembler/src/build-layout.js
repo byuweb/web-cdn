@@ -323,7 +323,7 @@ function processVersionAliasFiles(libId, lib, ver, verPrefix, verFiles) {
 
         return verFiles.map(file => {
             const copy = deepcopy(file);
-            copy.cdnPath = aliasPrefix + file.name;
+            copy.cdnPath = file.cdnPath.replace(verPrefix, aliasPrefix);
             copy.meta.cacheControl = cacheControl;
 
             copy.meta.tags = Object.assign({}, file.tags, {
@@ -333,7 +333,7 @@ function processVersionAliasFiles(libId, lib, ver, verPrefix, verFiles) {
             if (redirect) {
                 copy.meta.redirect = {
                     status: 302,
-                    location: '/' + file.cdnPath
+                    location: file.cdnPath
                 };
                 delete copy.contentPath;
                 copy.contents = '';
@@ -476,7 +476,7 @@ function redirectListToTree(array) {
                 return tree[part] = tree[part] || {}
             }, agg);
 
-            leaf['|target|'] = {to, status, cache};
+            leaf['|target|'] = {from, to, status, cache};
 
             return agg;
         }, {});

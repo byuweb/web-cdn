@@ -126,8 +126,8 @@ function buildVersionAliases(libId, lib, verName, aliases) {
     let redirect = true;
     let cacheImmutable = false;
 
-    if (lib.lib_config && lib.lib_config.aliases) {
-        const aliasConfig = lib.lib_config.aliases;
+    if (lib.configuration && lib.configuration.aliases) {
+        const aliasConfig = lib.configuration.aliases;
 
         if (aliasConfig.redirect === false) {
             redirect = false;

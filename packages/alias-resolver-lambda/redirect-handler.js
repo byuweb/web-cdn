@@ -50,9 +50,9 @@ module.exports = class RedirectHandler {
 
         if (redirect) {
             return {
-                status: String(redirect.code),
+                status: String(redirect.status),
                 headers: toAmzHeaders({
-                    Location: redirect.to,
+                    Location: uri.replace(redirect.from, redirect.to),
                     'Cache-Control': redirect.cache,
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Methods': 'GET, HEAD',
