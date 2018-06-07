@@ -1,6 +1,6 @@
 /*
  *  @license
- *    Copyright 2017 Brigham Young University
+ *    Copyright 2018 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -14,25 +14,27 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+
 "use strict";
 
-// const fetch = require('node-fetch');
-const config = require('./config.json');
-
-
-const RedirectHandler = require('redirect-handler');
-
-const handler = new RedirectHandler({
-    defaultHost: config.rootDns,
-});
-
-exports.handler = function (event, context, callback) {
-    console.log('Incoming Event', JSON.stringify(event, null, 2));
-
-    let request = event.Records[0].cf.request;
-
-    handler.handleRequest(request).then(
-        result => callback(null, result),
-        err => callback(err)
-    );
+module.exports = function findRedirect(rules, pathParts) {
+    const prefixMatch = findRedirectPrefix(rules.prefixes, pathParts);
+    return prefixMatch;
 };
+
+function findRedirectPrefix(prefixRules, pathParts) {
+    let current = prefixRules;
+    let match = null;
+    for (const part of pathParts) {
+        if (part in current) {
+            current = current[part];
+            if ('|target|' in current) {
+                match = current['|target|'];
+            }
+        } else {
+            break;
+        }
+    }
+    return match;
+}
+

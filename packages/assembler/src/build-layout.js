@@ -41,7 +41,7 @@ const CACHE_CONTROL_FIVE_MINUTES = 'public, max-age=300, s-maxage=300';
 const CACHE_CONTROL_ONE_HOUR = 'public, max-age=3600, s-maxage=900';
 const CACHE_CONTROL_ONE_MINUTE = 'public, max-age=60, s-maxage=0';
 
-const REDIRECTS_PATH = '/.cdn-meta/redirects.txt';
+const REDIRECTS_PATH = '/.cdn-infra/redirects.json';
 
 module.exports = async function buildLayout(oldManifest, newManifest, actions, sourceDirs, cdnHost) {
     const files = [];
@@ -65,7 +65,7 @@ module.exports = async function buildLayout(oldManifest, newManifest, actions, s
         }
     }
 
-    files.push(getRedirectFile(newManifest));
+    files.push(...await getRedirectFiles(newManifest));
 
     files.forEach(it => {
         let sha = 'empty';
@@ -80,28 +80,44 @@ module.exports = async function buildLayout(oldManifest, newManifest, actions, s
     return files;
 };
 
-function getRedirectFile(newManifest) {
-    const redirects = redirectList(newManifest);
+async function getRedirectFiles(newManifest) {
+    const redirects = buildRedirectRules(newManifest);
 
-    const contents = redirects
-        .map(it => `${it.type}\t${it.from}\t${it.to}\t${it.status}\t${it.cache}`)
-        .join('\n');
+    const redirectContents = JSON.stringify(redirects);
 
-    return {
-            name: REDIRECTS_PATH,
-            cdnPath: REDIRECTS_PATH,
-            type: 'text/plain',
-            contents,
-            meta: {
-                CACHE_CONTROL_ONE_HOUR,
-                headers: {
-                    'Timing-Allow-Origin': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, HEAD',
-                    'Access-Control-Max-Age': '86400',
-                },
-            }
+    const jsonFile = {
+        name: REDIRECTS_PATH,
+        cdnPath: REDIRECTS_PATH,
+        type: 'application/json',
+        contents: redirectContents,
+        meta: {
+            CACHE_CONTROL_ONE_HOUR,
+            headers: {
+                'Timing-Allow-Origin': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD',
+                'Access-Control-Max-Age': '86400',
+            },
         }
+    };
+
+    const gzipFile = {
+        name: REDIRECTS_PATH + '.gz',
+        cdnPath: REDIRECTS_PATH + '.gz',
+        type: 'application/gzip',
+        contents: await gzipIt(Buffer.from(redirectContents, 'utf8')),
+        meta: {
+            CACHE_CONTROL_ONE_HOUR,
+            headers: {
+                'Timing-Allow-Origin': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD',
+                'Access-Control-Max-Age': '86400',
+            },
+        }
+    };
+
+    return [jsonFile, gzipFile];
 }
 
 async function computeMovesForResources(libId, verId, ver, verPrefix, srcDir, resource) {
@@ -445,7 +461,30 @@ function getVariant(file) {
     };
 }
 
-function redirectList(newManifest) {
+function buildRedirectRules(newManifest) {
+    const aliases = aliasRedirectsList(newManifest);
+
+    return redirectListToTree(aliases);
+}
+
+function redirectListToTree(array) {
+    const prefixes = array.filter(it => it.type === 'prefix')
+        .reduce((agg, {from, to, status, cache}) => {
+            const pathParts = from.split('/').filter(it => it.length > 0);
+
+            const leaf = pathParts.reduce((tree, part) => {
+                return tree[part] = tree[part] || {}
+            }, agg);
+
+            leaf['|target|'] = {to, status, cache};
+
+            return agg;
+        }, {});
+
+    return {prefixes};
+}
+
+function aliasRedirectsList(newManifest) {
     return flatMap(Object.entries(newManifest.libraries), ([libId, lib]) => {
         return flatMap(lib.versions, version => {
             const aliasCache = aliasCacheControlFor(libId, version);

@@ -44,7 +44,7 @@ const mime = require('mime');
 
 const LARGE_FILE_LIMIT = 768000; //768 kB
 
-const LARGE_FILE_PREFIX = '.cdn-meta/large-blobs/';
+const LARGE_FILE_PREFIX = '.cdn-infra/file-blobs/';
 
 module.exports.uploadFile1 = async function uploadFiles(oldManifest, newManifest, versionManifests, actions, bucket, assembledDir, cdnHost, dryRun) {
     let sync = [];
@@ -187,23 +187,33 @@ async function copyFilesToDestination(bucket, files) {
         }
 
         log.debug(`Copying ${config.Key}`);
-        await s3Client.copyObject(config).promise();
+        try {
+            await s3Client.copyObject(config).promise();
+        } catch (e) {
+            console.error('error copying', config.CopySource, 'to', config.Key);
+            throw e;
+        }
 
         if (file.meta.tags) {
             log.debug(`Tagging ${config.Key}`);
-            await s3Client.putObjectTagging({
-                Bucket: bucket,
-                Key: file.cdnPath,
-                Tagging: {
-                    TagSet: Object.entries(file.meta.tags)
-                        .map(([key, value]) => {
-                            return {
-                                Key: key,
-                                Value: value
-                            }
-                        }),
-                }
-            }).promise();
+            try {
+                await s3Client.putObjectTagging({
+                    Bucket: bucket,
+                    Key: config.Key,
+                    Tagging: {
+                        TagSet: Object.entries(file.meta.tags)
+                            .map(([key, value]) => {
+                                return {
+                                    Key: key,
+                                    Value: value
+                                }
+                            }),
+                    }
+                }).promise();
+            } catch (err) {
+                console.error('error tagging', config.Key);
+                throw err;
+            }
         }
 
         log.debug(`Finished Copying ${config.Key}`);

@@ -116,7 +116,7 @@ Resources:
           Status: Enabled
         - Id: RemoveOldBlobs
           Status: Enabled
-          Prefix: '.cdn-meta/large-blobs/'
+          Prefix: '.cdn-infra/file-blobs/'
           ExpirationInDays: 60
       Tags:
       - Key: Name
@@ -258,19 +258,21 @@ Resources:
           MaxTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, max ]
           MinTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, min ]
           LambdaFunctionAssociations:
+          - EventType: origin-request
+            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
           - EventType: origin-response
             LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
         CacheBehaviors:
-        - PathPattern: '/redirects/*'
+        - PathPattern: '/.cdn-infra/*'
           AllowedMethods: [GET, HEAD, OPTIONS]
           Compress: true
           ForwardedValues:
             QueryString: false
           TargetOriginId: only-origin
           ViewerProtocolPolicy: redirect-to-https
-          LambdaFunctionAssociations:
-          - EventType: origin-request
-            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
+          DefaultTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, default ]
+          MaxTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, max ]
+          MinTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, min ]
 #        CacheBehaviors:
 #        - PathPattern: '/*/latest/*'
 #          AllowedMethods: [GET, HEAD, OPTIONS]

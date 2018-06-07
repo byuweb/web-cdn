@@ -6,6 +6,6 @@ echo "=========== Building cors-lambda ==========="
 
 rm -rf node_modules
 
-npm i --production
+yarn install --production
 
 
