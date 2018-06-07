@@ -96,7 +96,7 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     // const versionManifests = await buildMeta(newManifest, assembledDir);
     //
     log.info("----- Uploading Files -----");
-    await uploadFiles2(targetBucket, filesystem, actions, newManifest, dryRun);
+    await uploadFiles2(targetBucket, filesystem, actions, newManifest, cdnHost, dryRun);
     // await uploadFiles(oldManifest, newManifest, versionManifests, actions, targetBucket, assembledDir, cdnHost, dryRun);
 };
 

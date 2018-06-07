@@ -90,6 +90,7 @@ async function getRedirectFiles(newManifest) {
         cdnPath: REDIRECTS_PATH,
         type: 'application/json',
         contents: redirectContents,
+        invalidate: true,
         meta: {
             CACHE_CONTROL_ONE_HOUR,
             headers: {
@@ -106,6 +107,7 @@ async function getRedirectFiles(newManifest) {
         cdnPath: REDIRECTS_PATH + '.gz',
         type: 'application/gzip',
         contents: await gzipIt(Buffer.from(redirectContents, 'utf8')),
+        invalidate: true,
         meta: {
             CACHE_CONTROL_ONE_HOUR,
             headers: {
@@ -352,7 +354,7 @@ function cacheControlFor(libId, version) {
 }
 
 function aliasCacheControlFor(libId, version) {
-    if (version.type === 'release') {
+    if (version.type === 'release' || version.name === 'master') {
         return CACHE_CONTROL_ONE_HOUR;
     } else {
         return CACHE_CONTROL_ONE_MINUTE;

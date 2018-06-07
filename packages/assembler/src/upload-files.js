@@ -41,6 +41,7 @@ const path = require('path');
 const log = require('winston');
 const fs = require('fs-extra');
 const mime = require('mime');
+const cloudfront = require('./util/cloudfront');
 
 const LARGE_FILE_LIMIT = 768000; //768 kB
 
@@ -96,7 +97,7 @@ module.exports.uploadFile1 = async function uploadFiles(oldManifest, newManifest
     //TODO: add cloudfront invalidation
 };
 
-exports.uploadFiles2 = async function (bucket, files, actions, manifest, dryRun) {
+exports.uploadFiles2 = async function (bucket, files, actions, manifest, cdnHost, dryRun) {
     log.debug(`Uploading ${files.length} files to ${bucket}`);
 
     if (dryRun) {
@@ -114,7 +115,29 @@ exports.uploadFiles2 = async function (bucket, files, actions, manifest, dryRun)
     log.info('Updating Manifest');
     await uploadManifest(bucket, manifest, dryRun);
 
+    log.info('Invalidate Infra files');
+    await invalidateInfraFiles(files, cdnHost, dryRun);
 };
+
+async function invalidateInfraFiles(files, cdnHost, dryRun) {
+    const paths = files.filter(it => it.invalidate)
+        .map(it => it.cdnPath);
+
+    paths.push('/manifest.json');
+    if (dryRun) {
+        log.debug('Dry run; would have invalidated', paths);
+        return;
+    }
+    const distro = await cloudfront.getDistributionForAlias(cdnHost);
+    if (!distro) {
+        log.warn(`!!!!!!!!! Unable to create CloudFront Invalidation: couldn't find distribution with alias ${cdnHost}`);
+        return;
+    }
+
+    const id = distro.Id;
+
+    await cloudfront.invalidate(id, paths);
+}
 
 async function uploadContents(bucket, files) {
     const copied = new Set();
