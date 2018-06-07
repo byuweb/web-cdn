@@ -186,7 +186,7 @@ async function copyFilesToDestination(bucket, files) {
             config.WebsiteRedirectLocation = file.meta.redirect.location;
         }
 
-        log.debug(`Copying ${config.Key}`);
+        log.debug(`Copying ${sha} to ${config.Key}`);
         try {
             await s3Client.copyObject(config).promise();
         } catch (e) {

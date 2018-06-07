@@ -72,7 +72,7 @@ module.exports = async function buildLayout(oldManifest, newManifest, actions, s
         if (it.hashes) {
             sha = it.hashes.sha512.hex;
         } else if (it.contents) {
-            sha = util.hash('sha512', Buffer.from(it.contents));
+            sha = util.hash('sha512', Buffer.from(it.contents)).hex;
         }
         it.fileSha512 = sha;
     });
