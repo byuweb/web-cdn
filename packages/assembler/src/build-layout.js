@@ -24,6 +24,7 @@ const brotli = require('iltorb');
 const mime = require('mime');
 const moment = require('moment-timezone');
 const deepcopy = require('deepcopy');
+const computeLinkHeader = require('./util/preload-headers');
 
 const zlib = require('zlib');
 const gzipIt = promisify(zlib.gzip);
@@ -139,7 +140,7 @@ async function computeMovesForResources(libId, verId, ver, verPrefix, srcDir, re
 
     let globBase = globMatch.base;
 
-    let toMove = await globMatch;
+    let toMove = (await globMatch).map(it => path.normalize(it));
 
     return flatMap(toMove, name => {
         let from = path.join(srcDir, name);
@@ -279,6 +280,26 @@ function getMetaFiles(libId, ver, prefix, versionFiles, readme, cacheControl) {
     return files;
 }
 
+function getHeadersFor(ver, file) {
+    const base = {
+        'Timing-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD',
+        'Access-Control-Max-Age': '86400',
+        'X-CDN-Ver': `${ver.type} ${ver.ref} ${ver.source_sha.substr(0, 10)}`
+    };
+
+    if (ver.config && ver.config.preload) {
+        const link = computeLinkHeader(file, ver.config.preload);
+        if (link) {
+            base['Link'] = link;
+        }
+    }
+
+    return base;
+}
+
+
 async function processSourceFile(ver, file, cacheControl) {
     const from = file.from;
     const type = mimeTypeFor(from);
@@ -290,6 +311,8 @@ async function processSourceFile(ver, file, cacheControl) {
 
     const size = await getSizeFor(content, type, sha256);
 
+    const headers = getHeadersFor(ver, file);
+
     return {
         name: file.name,
         contentPath: from,
@@ -299,14 +322,7 @@ async function processSourceFile(ver, file, cacheControl) {
         hashes,
         meta: {
             cacheControl: cacheControl,
-            headers: {
-                'Timing-Allow-Origin': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, HEAD',
-                'Access-Control-Max-Age': '86400',
-                'X-CDN-Ver': `${ver.type} ${ver.ref} ${ver.source_sha.substr(0, 10)}`
-                //TODO: Put awesomeness like 'Link' here
-            },
+            headers,
             tags: {
                 'CDN-Version-Ref': ver.ref,
                 'CDN-Version-Type': ver.type,

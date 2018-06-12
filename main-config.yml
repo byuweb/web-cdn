@@ -31,6 +31,24 @@ libraries:
             Content Goes Here
           </div>
           <byu-footer></byu-footer>
+      preload:
+        byu-theme-components.min.css:
+        - lib: shared-icons
+          version: latest
+          file: logos/monogram-white.svg
+        - lib: shared-icons
+          version: latest
+          file: logos/word-mark-wide-white.svg
+#        - absolute: https://cloud.typography.com/75214/6517752/css/fonts.css
+        byu-theme-components.min.js:
+        - ./components.min.js
+        - lib: shared-icons
+          version: latest
+          file: logos/monogram-white.svg
+        - lib: shared-icons
+          version: latest
+          file: logos/word-mark-wide-white.svg
+#        - absolute: https://cloud.typography.com/75214/6517752/css/fonts.css
   byu-card:
     source: github:byuweb/byu-card
     configuration:
