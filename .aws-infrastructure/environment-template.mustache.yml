@@ -199,7 +199,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${CDNName}-webhooks-${Environment}"
-      CodeUri: ./../packages/webhooks/
+      CodeUri: ./../webhooks/
       Handler: lambda.handler
       Runtime: nodejs6.10
       MemorySize: 128
@@ -259,9 +259,9 @@ Resources:
           MinTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, min ]
           LambdaFunctionAssociations:
           - EventType: origin-request
-            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
+            LambdaFunctionARN: !Ref EagerRedirectVersion{{eagerRedirect.sha}}
           - EventType: origin-response
-            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
+            LambdaFunctionARN: !Ref EnhancedHeadersVersion{{enhancedHeaders.sha}}
         CacheBehaviors:
         - PathPattern: '/.cdn-infra/*'
           AllowedMethods: [GET, HEAD, OPTIONS]
@@ -273,53 +273,10 @@ Resources:
           DefaultTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, default ]
           MaxTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, max ]
           MinTTL: !FindInMap [ NormalCacheTTL, !Ref Environment, min ]
-#        CacheBehaviors:
-#        - PathPattern: '/*/latest/*'
-#          AllowedMethods: [GET, HEAD, OPTIONS]
-#          Compress: true
-#          ForwardedValues:
-#            QueryString: false
-#          TargetOriginId: only-origin
-#          ViewerProtocolPolicy: redirect-to-https
-#          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
-#          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
-#          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
-#          LambdaFunctionAssociations:
-#          - EventType: origin-request
-#            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
-#          - EventType: origin-response
-#            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
-#        - PathPattern: '/*/unstable/*'
-#          AllowedMethods: [GET, HEAD, OPTIONS]
-#          Compress: true
-#          ForwardedValues:
-#            Headers: [Origin, Access-Control-Request-Headers, Access-Control-Request-Method]
-#            QueryString: false
-#          TargetOriginId: only-origin
-#          ViewerProtocolPolicy: redirect-to-https
-#          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
-#          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
-#          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
-#          LambdaFunctionAssociations:
-#          - EventType: origin-request
-#            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
-#          - EventType: origin-response
-#            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
-#        - PathPattern: '/*/*.*.x/*'
-#          AllowedMethods: [GET, HEAD, OPTIONS]
-#          Compress: true
-#          ForwardedValues:
-#            QueryString: false
-#          TargetOriginId: only-origin
-#          ViewerProtocolPolicy: redirect-to-https
-#          DefaultTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, default ]
-#          MaxTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, max ]
-#          MinTTL: !FindInMap [ AliasCacheTTL, !Ref Environment, min ]
-#          LambdaFunctionAssociations:
-#          - EventType: origin-request
-#            LambdaFunctionARN: !Ref AliasResolverVersion{{aliasResolver.sha}}
-#          - EventType: origin-response
-#            LambdaFunctionARN: !Ref CorsHeaderVersion{{corsHeaders.sha}}
+          LambdaFunctionAssociations:
+          - EventType: origin-response
+            LambdaFunctionARN: !Ref EnhancedHeadersVersion{{enhancedHeaders.sha}}
+
         Logging:
           Bucket:
             Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucketDomain"
@@ -368,7 +325,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${CDNName}-edge-alias-resolver-${Environment}"
-      CodeUri: ./../packages/alias-resolver-lambda/
+      CodeUri: ./../edge-lambdas/eager-redirect/
       Handler: index.handler
       Runtime: nodejs8.10
       MemorySize: 512
@@ -376,7 +333,19 @@ Resources:
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
 
-  AliasResolverVersion{{aliasResolver.sha}}:
+  EagerRedirectFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${CDNName}-edge-eager-redirect-${Environment}"
+      CodeUri: ./../edge-lambdas/eager-redirect/
+      Handler: index.handler
+      Runtime: nodejs8.10
+      MemorySize: 512
+      Timeout: 20
+      Role:
+        Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
+
+  EagerRedirectVersion{{eagerRedirect.sha}}:
     Type: AWS::Lambda::Version
     Properties:
       FunctionName: !Ref AliasResolverFunc
@@ -385,7 +354,19 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${CDNName}-edge-cors-headers-${Environment}"
-      CodeUri: ./../packages/cors-headers-edge-lambda/
+      CodeUri: ./../edge-lambdas/enhanced-headers/
+      Handler: index.handler
+      Runtime: nodejs6.10
+      MemorySize: 128
+      Timeout: 20
+      Role:
+        Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
+        
+  EnhancedHeaderFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${CDNName}-edge-enhanced-headers-${Environment}"
+      CodeUri: ./../edge-lambdas/enhanced-headers/
       Handler: index.handler
       Runtime: nodejs6.10
       MemorySize: 128
@@ -393,10 +374,10 @@ Resources:
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
 
-  CorsHeaderVersion{{corsHeaders.sha}}:
+  EnhancedHeaderVersion{{enhancedHeaders.sha}}:
     Type: AWS::Lambda::Version
     Properties:
-      FunctionName: !Ref CorsHeaderFunc
+      FunctionName: !Ref EnhancedHeaderFunc
 
 Outputs:
   ContentBucket:

@@ -10,20 +10,19 @@ env:
 phases:
   install:
     commands:
-      - chmod a+x .codebuild/setup.sh && .codebuild/setup.sh
+      - find . -type f -name '*.sh' ! -path '**/node_modules/**' -exec chmod u+x {} \;
+      - .codebuild/setup.sh
       - pip install awscli --upgrade --user
       - mkdir -p /root/.cache/yarn && yarn config set cache-folder /root/.cache/yarn
   pre_build:
     commands:
       - lerna bootstrap
-      - lerna exec -- chmod a+x ./codebuild.sh
-      - chmod a+x infrastructure/deploy-environment.sh
   build:
     commands:
       - lerna exec -- ./codebuild.sh
       - echo $EXTRA_TAGS
       - find ./* -mtime +10950 -exec touch {} \;
-      - infrastructure/deploy-environment.sh $CDN_NAME $ENV $ROOT_DNS $ACCOUNT_STACK_NAME $CERTIFICATE_ARN $CONFIG_REPO $CONFIG_BRANCH "$EXTRA_TAGS"
+      - .aws-infrastructure/deploy-environment.sh $CDN_NAME $ENV $ROOT_DNS $ACCOUNT_STACK_NAME $CERTIFICATE_ARN $CONFIG_REPO $CONFIG_BRANCH "$EXTRA_TAGS"
 
 
 cache:

@@ -38,15 +38,15 @@ working=$(pwd)
 
 now=$(date +"%s")
 
-alias_resolver_hash=`packageChecksum packages/alias-resolver-lambda`
-alias_resolver_hash_short=`echo ${alias_resolver_hash} | cut -c -6`
+eager_redirect_hash=`packageChecksum edge-lambdas/eager-redirect`
+eager_redirect_hash_short=`echo ${eager_redirect_hash} | cut -c -6`
 
-cors_hash=`packageChecksum packages/cors-headers-edge-lambda`
-cors_hash_short=`echo ${cors_hash} | cut -c -6`
+enhanced_headers_hash=`packageChecksum edge-lambdas/enhanced-headers`
+enhanced_headers_hash_short=`echo ${enhanced_headers_hash} | cut -c -6`
 
 templateDataFile=/tmp/template-data-$now.json
 
-echo '{ "aliasResolver": { "sha": "'${alias_resolver_hash_short}'" }, "corsHeaders": { "sha": "'${cors_hash_short}'" } }' > ${templateDataFile}
+echo '{ "eagerRedirect": { "sha": "'${eager_redirect_hash_short}'" }, "enhancedHeaders": { "sha": "'${enhanced_headers_hash_short}'" } }' > ${templateDataFile}
 
 renderedCfnFile=${here}/environment-template-rendered.yml
 
