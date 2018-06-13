@@ -362,7 +362,7 @@ Resources:
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
         
-  EnhancedHeaderFunc:
+  EnhancedHeadersFunc:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${CDNName}-edge-enhanced-headers-${Environment}"
@@ -374,10 +374,10 @@ Resources:
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
 
-  EnhancedHeaderVersion{{enhancedHeaders.sha}}:
+  EnhancedHeadersVersion{{enhancedHeaders.sha}}:
     Type: AWS::Lambda::Version
     Properties:
-      FunctionName: !Ref EnhancedHeaderFunc
+      FunctionName: !Ref EnhancedHeadersFunc
 
 Outputs:
   ContentBucket:
