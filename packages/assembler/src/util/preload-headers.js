@@ -23,22 +23,17 @@ const log = require('winston');
 const path = require('path');
 const mime = require('mime');
 
-module.exports = function computeLinkHeader(file, rules) {
-    const rule = rules[file.name];
-    if (!rule) {
-        return false;
-    }
-
+module.exports = function computeLinkHeader(filePath, rules) {
     const header = new LinkHeader();
 
-    for (const link of rule) {
+    for (const link of rules) {
         let value;
         if (isRelativePathLink(link)) {
-            value = handleRelativePath(file, link);
+            value = handleRelativePath(filePath, link);
         } else if (isAbsolute(link)) {
-            value = handleAbsolute(file, link);
+            value = handleAbsolute(filePath, link);
         } else if (isLib(link)) {
-            value = handleLib(file, link);
+            value = handleLib(filePath, link);
         } else {
             log.warn(`Got a bad link spec, I don't know what to do with it.`, link);
             continue;
@@ -48,7 +43,7 @@ module.exports = function computeLinkHeader(file, rules) {
             uri: value,
             as: link.as || guessType(value)
         });
-        if (rule.module || looksLikeModule(value)) {
+        if (link.module || looksLikeModule(value)) {
             header.set({
                 rel: 'modulepreload',
                 uri: value
@@ -88,14 +83,16 @@ function isRelativePathLink(link) {
     return 'relative' in link;
 }
 
-function handleRelativePath(file, link) {
+function handleRelativePath(filePath, link) {
     let value;
     if (typeof link === 'string') {
         value = link;
     } else {
         value = link.relative;
     }
-    return path.normalize(path.join(path.dirname(file.to), value)).replace(/\\/g, '/');
+    const isDirectory = filePath.endsWith('/');
+    const dir = isDirectory ? filePath : path.dirname(filePath);
+    return path.normalize(path.join(dir, value)).replace(/\\/g, '/');
 }
 
 function isAbsolute(link) {
@@ -105,7 +102,7 @@ function isAbsolute(link) {
     return 'absolute' in link;
 }
 
-function handleAbsolute(file, link) {
+function handleAbsolute(filePath, link) {
     if (typeof link === 'string') {
         return link;
     }
@@ -119,7 +116,7 @@ function isLib(link) {
     return 'lib' in link && 'version' in link && 'file' in link;
 }
 
-function handleLib(file, link) {
+function handleLib(filePath, link) {
     return `/${link.lib}/${link.version}/${link.file}`;
 }
 

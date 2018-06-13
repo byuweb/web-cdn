@@ -84,6 +84,8 @@ module.exports = async function buildLayout(oldManifest, newManifest, actions, s
 async function getRedirectFiles(newManifest) {
     const redirects = buildRedirectRules(newManifest);
 
+    await fs.writeJson('./redirect.json', redirects, {spaces: 2});
+
     const redirectContents = JSON.stringify(redirects);
 
     const jsonFile = {
@@ -93,7 +95,7 @@ async function getRedirectFiles(newManifest) {
         contents: redirectContents,
         invalidate: true,
         meta: {
-            CACHE_CONTROL_ONE_HOUR,
+            cacheControl: CACHE_CONTROL_ONE_HOUR,
             headers: {
                 'Timing-Allow-Origin': '*',
                 'Access-Control-Allow-Origin': '*',
@@ -110,7 +112,7 @@ async function getRedirectFiles(newManifest) {
         contents: await gzipIt(Buffer.from(redirectContents, 'utf8')),
         invalidate: true,
         meta: {
-            CACHE_CONTROL_ONE_HOUR,
+            cacheControl: CACHE_CONTROL_ONE_HOUR,
             headers: {
                 'Timing-Allow-Origin': '*',
                 'Access-Control-Allow-Origin': '*',
@@ -290,9 +292,10 @@ function getHeadersFor(ver, file) {
     };
 
     if (ver.config && ver.config.preload) {
-        const link = computeLinkHeader(file, ver.config.preload);
-        if (link) {
-            base['Link'] = link;
+        const preloads = ver.config.preload;
+        const fileRules = preloads[file.name];
+        if (fileRules) {
+            base['Link'] = computeLinkHeader(file.to, fileRules)
         }
     }
 
@@ -487,14 +490,14 @@ function buildRedirectRules(newManifest) {
 
 function redirectListToTree(array) {
     const prefixes = array.filter(it => it.type === 'prefix')
-        .reduce((agg, {from, to, status, cache}) => {
+        .reduce((agg, {from, to, status, cache, preload}) => {
             const pathParts = from.split('/').filter(it => it.length > 0);
 
             const leaf = pathParts.reduce((tree, part) => {
                 return tree[part] = tree[part] || {}
             }, agg);
 
-            leaf['|target|'] = {from, to, status, cache};
+            leaf['|target|'] = {from, to, status, cache, preload};
 
             return agg;
         }, {});
@@ -502,10 +505,29 @@ function redirectListToTree(array) {
     return {prefixes};
 }
 
+function resolvePreloads(version, preloads) {
+    return Object.entries(preloads)
+        .map(([file, rules]) => {
+            return [file, computeLinkHeader(version.path, rules)]
+        }).reduce((agg, [key, value]) => {
+            agg[key] = value;
+            return agg;
+        }, {});
+}
+
 function aliasRedirectsList(newManifest) {
     return flatMap(Object.entries(newManifest.libraries), ([libId, lib]) => {
         return flatMap(lib.versions, version => {
+            if (!version.aliases || Object.entries(version.aliases).length === 0) {
+                return [];
+            }
             const aliasCache = aliasCacheControlFor(libId, version);
+            let preload = undefined;
+
+            if (version.config && version.config.preload) {
+                preload = resolvePreloads(version, version.config.preload);
+            }
+
             return Object.entries(version.aliases)
                 .filter(([aliasName, alias]) => alias.redirect)
                 .map(([aliasName, alias]) => {
@@ -514,7 +536,8 @@ function aliasRedirectsList(newManifest) {
                         from: alias.path,
                         to: version.path,
                         status: 302,
-                        cache: aliasCache
+                        cache: aliasCache,
+                        preload: preload
                     }
                 });
         });

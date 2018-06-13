@@ -49,23 +49,46 @@ module.exports = class RedirectHandler {
         const redirect = applyRules(rules, pathParts);
 
         if (redirect) {
+            console.log('Got a redirect from ', redirect.from, 'to', redirect.to);
+            const file = uri.replace(redirect.from, '');
+            const destination = uri.replace(redirect.from, redirect.to);
             return {
                 status: String(redirect.status),
-                headers: toAmzHeaders({
-                    Location: uri.replace(redirect.from, redirect.to),
-                    'Cache-Control': redirect.cache,
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, HEAD',
-                    'Access-Control-Max-Age': '86400',
-                    'Timing-Allow-Origin': '*'
-                }),
+                headers: getHeadersForRedirect(file, destination, redirect),
             }
         } else {
+            console.log('No redirect');
             return request;
         }
     }
 
 };
+
+function getHeadersForRedirect(file, destination, redirect) {
+    const headers = {
+        Location: destination,
+        'Cache-Control': redirect.cache,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD',
+        'Access-Control-Max-Age': '86400',
+        'Timing-Allow-Origin': '*'
+    };
+
+    if (redirect.preload) {
+        console.log('Computing preload headers for', file);
+        const preload = buildPreload(file, redirect.preload);
+        if (preload) {
+            console.log('Sending Link header', preload);
+            headers.Link = preload;
+        }
+    }
+
+    return toAmzHeaders(headers);
+}
+
+function buildPreload(file, preload) {
+    return preload[file];
+}
 
 function toAmzHeaders(headers) {
     return Object.entries(headers)
