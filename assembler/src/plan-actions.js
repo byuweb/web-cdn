@@ -50,7 +50,7 @@ module.exports = function diffManifest(oldManifest, newManifest, forceBuild) {
         let newVerIds = new Set(newVers.map(verName));
 
         let addedVersions = sets.difference(newVerIds, oldVerIds);
-        let removedVersions = sets.difference(oldVerIds, newVerIds);
+        let removedVersions = [...sets.difference(oldVerIds, newVerIds)].filter(verId => canRemoveVersion(verId, oldVers, newVers));
 
         let updatedCandidates = sets.union(oldVerIds, newVerIds);
         let updatedVersions;
@@ -93,6 +93,14 @@ function verNameIs(id) {
     return function (ver) {
         return ver.name === id;
     }
+}
+
+function canRemoveVersion(id, oldVersions, newVersions) {
+    const oldVer = oldVersions.find(it => id === it.name);
+    if (!oldVer) {
+        return true;
+    }
+    return oldVer.type !== 'release';
 }
 
 function manifestVersionChanged(oldManifest, newManifest) {
