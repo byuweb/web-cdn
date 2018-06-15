@@ -19,7 +19,8 @@
 const sets = require('./util/sets');
 const log = require('winston');
 
-module.exports = function diffManifest(oldManifest, newManifest, forceBuild) {
+module.exports = function diffManifest(buildContext, oldManifest, newManifest) {
+    const {forceBuild} = buildContext;
     let allLibs = new Set([].concat(
         Object.keys(oldManifest.libraries),
         Object.keys(newManifest.libraries)
@@ -50,7 +51,7 @@ module.exports = function diffManifest(oldManifest, newManifest, forceBuild) {
         let newVerIds = new Set(newVers.map(verName));
 
         let addedVersions = sets.difference(newVerIds, oldVerIds);
-        let removedVersions = [...sets.difference(oldVerIds, newVerIds)].filter(verId => canRemoveVersion(verId, oldVers, newVers));
+        let removedVersions = sets.difference(oldVerIds, newVerIds);
 
         let updatedCandidates = sets.union(oldVerIds, newVerIds);
         let updatedVersions;
@@ -62,8 +63,8 @@ module.exports = function diffManifest(oldManifest, newManifest, forceBuild) {
         }
 
         diff[libId] = {
-            add: [...addedVersions],
-            update: [...updatedVersions],
+            add: [...addedVersions].filter(it => canUpdate(it, newVers)),
+            update: [...updatedVersions].filter(it => canUpdate(it, newVers)),
             remove: [...removedVersions],
             deleteLib: false
         };
@@ -72,6 +73,10 @@ module.exports = function diffManifest(oldManifest, newManifest, forceBuild) {
     return diff;
 };
 
+function canUpdate(refName, allVersions) {
+    const v = allVersions.find(it => refName === it.name);
+    return !v.missing_source;
+}
 
 function computeChangedVersions(candidates, oldVers, newVers) {
     let c = [...candidates]
@@ -93,14 +98,6 @@ function verNameIs(id) {
     return function (ver) {
         return ver.name === id;
     }
-}
-
-function canRemoveVersion(id, oldVersions, newVersions) {
-    const oldVer = oldVersions.find(it => id === it.name);
-    if (!oldVer) {
-        return true;
-    }
-    return oldVer.type !== 'release';
 }
 
 function manifestVersionChanged(oldManifest, newManifest) {

@@ -71,11 +71,10 @@ exports.handler = (event, context, callback) => {
 
     response.status = status;
 
+    setHeader(response, 'X-Clacks-Overhead', 'GNU Terry Pratchett');
+
     console.log('Sending response', JSON.stringify(response, null, 2));
-    response.headers['x-lambda'] = [{
-        key: 'x-lambda',
-        value: `${isColdStart ? 'cold': 'hot'} ${Date.now() - start}`
-    }];
+
     callback(null, response);
 };
 

@@ -25,14 +25,15 @@ const repoConfig = require('./repo-config');
 const moment = require('moment-timezone');
 const log = require('winston');
 
-const { URL } = require('url');
+const {URL} = require('url');
 
 const processBasicUsage = require('./util/basic-usage-processor');
 
-module.exports = async function assembleManifest(mainConfig, cdnHost) {
-    log.info('Assembling new manifest from config:', JSON.stringify(mainConfig, null, 2));
-    let libs = await Promise.all(Object.entries(mainConfig.libraries).map(async function ([id, defn]) {
-        return [id, await loadLib(id, defn, cdnHost)];
+module.exports = async function assembleManifest(buildContext, oldManifest) {
+    const {config, cdnHost} = buildContext;
+    log.info('Assembling new manifest from config:', JSON.stringify(config, null, 2));
+    let libs = await Promise.all(Object.entries(config.libraries).map(async function ([id, defn]) {
+        return [id, await loadLib(buildContext, id, defn, cdnHost, oldManifest.libraries[id])];
     }));
 
     let libraries = {};
@@ -48,7 +49,12 @@ module.exports = async function assembleManifest(mainConfig, cdnHost) {
     };
 };
 
-async function loadLib(id, defn, cdnHost) {
+function refMustBePreserved(version) {
+    return version.type === 'release';
+}
+
+async function loadLib(buildContext, id, defn, cdnHost, oldLib) {
+    if (!oldLib) oldLib = {versions: []};
     log.debug(`Loading library ${id}`);
     const cdnBase = 'https://' + cdnHost;
 
@@ -58,11 +64,34 @@ async function loadLib(id, defn, cdnHost) {
 
     let refs = await provider.listRefs();
 
-    const versionNames = refs.map(it => it.name);
+    const versionNames = [...new Set([
+        ...refs.map(it => it.name),
+        ...oldLib.versions.filter(refMustBePreserved).map(it => it.name)
+    ])];
+
+    const versions = await Promise.all(versionNames.map(
+        name => {
+            const ref = refs.find(it => it.name === name);
+            const oldRef = oldLib.versions.find(it => it.name === name);
+            if (ref) {
+                return refToVersion(id, defn, mainConfig, ref, cdnBase);
+            } else if (oldRef) {
+                buildContext.messages.warning({
+                    message: `${id} - protected ref ${oldRef.ref} was removed from ${oldLib.source}, but will not be removed from the CDN.`
+                });
+                oldRef.missing_source = true;
+                return oldRef;
+            } else {
+                // We shouldn't ever get here
+                throw `Unable to find ref ${id}@${name}`;
+            }
+        }));
 
     const libAliases = aliases(versionNames);
 
-    const versions = await Promise.all(refs.map(ref => postProcessRef(id, defn, mainConfig, ref, cdnBase, libAliases)));
+    versions.forEach(version => {
+        version.aliases = buildVersionAliases(id, defn, version.name, libAliases);
+    });
 
     const deprecated = !!mainConfig.deprecated;
     let deprecationMessage = undefined;
@@ -97,7 +126,7 @@ async function loadLib(id, defn, cdnHost) {
     return libDefinition;
 }
 
-async function postProcessRef(libId, libDefn, libConfig, ref, cdnBase, libAliases) {
+async function refToVersion(libId, libDefn, libConfig, ref, cdnBase) {
     const path = `/${libId}/${versionPath(ref.name, ref.type)}/`;
 
     const absoluteUrl = new URL(path, cdnBase).toString();
@@ -112,8 +141,6 @@ async function postProcessRef(libId, libDefn, libConfig, ref, cdnBase, libAliase
     if (basic_usage) {
         result.basic_usage = basic_usage;
     }
-
-    result.aliases = buildVersionAliases(libId, libDefn, ref.name, libAliases);
 
     return result;
 }

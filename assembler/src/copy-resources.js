@@ -24,7 +24,9 @@ const globs = require('./util/globs');
 
 const log = require('winston');
 
-module.exports = async function assembleArtifacts(manifest, actions, sourceDirs, assembledDir) {
+module.exports = async function assembleArtifacts(buildContext, manifest, actions, sourceDirs) {
+    const { assembledDir } = buildContext.directories;
+
     await fsp.emptyDir(assembledDir);
 
     let promises = Object.entries(manifest.libraries).map(async function ([id, defn]) {

@@ -169,11 +169,20 @@ Resources:
               Fn::ImportValue: !Sub "${AccountStackName}-AssemblerRepositoryUri"
         EnvironmentVariables:
           - Name: DESTINATION_S3_BUCKET
+            Type: PLAINTEXT
             Value: !Ref CdnContentBucket
           - Name: BUILD_ENV
+            Type: PLAINTEXT
             Value: !Ref Environment
           - Name: CDN_HOST
+            Type: PLAINTEXT
             Value: !Ref RootDNS
+          - Name: SLACK_WEBHOOK_URL
+            Type: PARAMETER_STORE
+            Value: !Sub "${CDNName}.${Environment}.slack-webhook"
+          - Name: SLACK_CHANNEL
+            Type: PARAMETER_STORE
+            Value: !Sub "${CDNName}.${Environment}.slack-channel"
       ServiceRole:
         Fn::ImportValue: !Sub "${AccountStackName}-BuilderRole"
       Tags:

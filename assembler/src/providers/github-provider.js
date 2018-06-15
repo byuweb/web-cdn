@@ -140,8 +140,14 @@ module.exports = class GithubProvider {
     async fetchRepoConfig(ref) {
         log.debug(`getting repo config for ${this.source}@${ref}`);
 
-        let cfg = await http.getJson(`${this.baseUri}/contents/.cdn-config.yml?ref=${encodeURIComponent(ref)}`);
-        return yaml.parse(Buffer.from(cfg.content, cfg.encoding));
+        try {
+            let cfg = await http.getJson(`${this.baseUri}/contents/.cdn-config.yml?ref=${encodeURIComponent(ref)}`);
+            return yaml.parse(Buffer.from(cfg.content, cfg.encoding));
+        } catch (err) {
+            const message = `Error getting repo config for github:${this.source}@${ref}: ${err.message}`;
+            log.error(message, err);
+            throw new Error(message);
+        }
     }
 
     async fetchLinks(config) {

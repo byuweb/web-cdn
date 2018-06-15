@@ -44,7 +44,7 @@ const CACHE_CONTROL_ONE_MINUTE = 'public, max-age=60, s-maxage=0';
 
 const REDIRECTS_PATH = '/.cdn-infra/redirects.json';
 
-module.exports = async function buildLayout(oldManifest, newManifest, actions, sourceDirs, cdnHost) {
+module.exports = async function buildLayout(buildContext, oldManifest, newManifest, actions, sourceDirs) {
     const files = [];
 
     for (const [libId, lib] of Object.entries(newManifest.libraries)) {

@@ -35,7 +35,7 @@ const buildMeta = require('./src/build-meta');
 const {uploadFiles2} = require('./src/upload-files');
 const buildLayout = require('./src/build-layout');
 const constants = require('./src/constants');
-
+const {NoopMessager, SlackMessager} = require('./src/messagers');
 
 module.exports = async function cdnAssembler(config, targetBucket, opts) {
     let {workDir, githubCredentials, dryRun, env, forceBuild, cdnHost} = (opts || {});
@@ -55,54 +55,83 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     let sourceDir = path.join(workDir, 'sources');
     let assembledDir = path.join(workDir, 'assembled');
 
-    log.info("----- Getting current manifest -----");
-    let oldManifest = await getOldManifest(targetBucket, cdnHost);
+    const messages = initMessager(opts);
 
-    log.info("----- Building new manifest -----");
-    let newManifest = await assembleManifest(config, cdnHost);
+    const buildContext = {
+        config,
+        targetBucket,
+        dryRun,
+        forceBuild,
+        directories: {
+            workDir,
+            sourceDir,
+            assembledDir,
+        },
+        cdnHost,
+        env,
+        messages,
+        started: new Date(),
+    };
 
-    await fs.writeJson(path.join(workDir, 'manifest.json'), newManifest, {
-        spaces: 1,
-        replacer: (key, value) => {
-            if (key === 'config') {
-                return undefined;
+    try {
+        log.info("----- Getting current manifest -----");
+        let oldManifest = await getOldManifest(buildContext);
+
+        log.info("----- Building new manifest -----");
+        let newManifest = await assembleManifest(buildContext, oldManifest);
+
+        await fs.writeJson(path.join(workDir, 'manifest.json'), newManifest, {
+            spaces: 1,
+            replacer: (key, value) => {
+                if (key === 'config') {
+                    return undefined;
+                }
+                return value;
             }
-            return value;
+        });
+
+        log.info("----- Planning Actions -----");
+        let actions = planActions(buildContext, oldManifest, newManifest);
+
+        if (!hasPlannedActions(actions)) {
+            log.info("No planned actions. Exiting.");
+            return;
         }
-    });
 
-    log.info("----- Planning Actions -----");
-    let actions = planActions(oldManifest, newManifest, forceBuild);
+        logPlannedActions(buildContext, actions, oldManifest, newManifest);
 
-    if (!hasPlannedActions(actions)) {
-        log.info("No planned actions. Exiting.");
-        return;
+        log.info("----- Downloading Sources -----");
+        let sourceDirs = await downloadSources(buildContext, newManifest, actions);
+
+        log.info("----- Assembling Artifacts -----");
+        await assembleArtifacts(buildContext, newManifest, actions, sourceDirs);
+
+        log.info("----- Building CDN Layout -----");
+        const filesystem = await buildLayout(buildContext, oldManifest, newManifest, actions, sourceDirs);
+
+        await fs.writeJson('./filesystem.json', filesystem, {spaces: 2});
+
+        // log.info("----- Building Library Meta Files -----");
+        // const versionManifests = await buildMeta(newManifest, assembledDir);
+        //
+        log.info("----- Uploading Files -----");
+        await uploadFiles2(buildContext, filesystem, actions, newManifest);
+        // await uploadFiles(oldManifest, newManifest, versionManifests, actions, targetBucket, assembledDir, cdnHost, dryRun);
+
+        await messages.sendSuccess(buildContext);
+    } catch (err) {
+        await messages.sendError(buildContext, err);
+        process.exit(1);
     }
-
-    logPlannedActions(actions);
-
-    log.info("----- Downloading Sources -----");
-    let sourceDirs = await downloadSources(newManifest, actions, sourceDir);
-
-    log.info("----- Assembling Artifacts -----");
-    await assembleArtifacts(newManifest, actions, sourceDirs, assembledDir);
-
-    log.info("----- Building CDN Layout -----");
-    const filesystem = await buildLayout(oldManifest, newManifest, actions, sourceDirs, cdnHost);
-
-    await fs.writeJson('./filesystem.json', filesystem, {spaces: 2});
-
-    // log.info("----- Building Library Meta Files -----");
-    // const versionManifests = await buildMeta(newManifest, assembledDir);
-    //
-    log.info("----- Uploading Files -----");
-    await uploadFiles2(targetBucket, filesystem, actions, newManifest, cdnHost, dryRun);
-    // await uploadFiles(oldManifest, newManifest, versionManifests, actions, targetBucket, assembledDir, cdnHost, dryRun);
 };
 
-async function getOldManifest(bucket, cdnHost) {
-    const found = (await getManifestFromS3(bucket)) || (await getManifestViaHTTP(cdnHost));
+async function getOldManifest({messages, targetBucket, cdnHost}) {
+    const found = (await getManifestFromS3(targetBucket)) || (await getManifestViaHTTP(cdnHost));
 
+    if (found) {
+        return found;
+    }
+    messages.warning({message: `Unable to find an old version of the manifest. Using an empty one.`});
     return found || getEmptyManifest();
 }
 
@@ -142,19 +171,40 @@ function getEmptyManifest() {
     };
 }
 
-function logPlannedActions(actions) {
+function logPlannedActions(buildContext, actions, oldManifest, newManifest) {
+    const {messages} = buildContext;
     log.info("----- Planned Actions: -----");
 
     Object.entries(actions).forEach(([id, acts]) => {
+        const oldLib = oldManifest.libraries[id];
+        const newLib = newManifest.libraries[id];
         log.info(` * ${id}`);
         if (acts.deleteLib) {
             log.info('   ## DELETE LIBRARY ##');
+            messages.deletedLib({
+                libId: id,
+                libName: oldLib.name,
+                libLink: oldLib.links.source,
+            });
             return;
         }
         if (acts.add.length === 0 && acts.update.length === 0 && acts.remove.length === 0) {
             log.info('   No Changes');
             return;
         }
+
+        const libInfo = {
+            libId: id,
+            libName: newLib.name,
+            libLink: newLib.links.source,
+        };
+
+        if (!oldLib && newLib) {
+            messages.addedLib(libInfo);
+        } else {
+            messages.updatedLib(libInfo);
+        }
+
         if (acts.add.length > 0) {
             log.info('   Add ' + acts.add)
         }
@@ -164,7 +214,44 @@ function logPlannedActions(actions) {
         if (acts.remove.length > 0) {
             log.info('   Remove ' + acts.remove)
         }
+
+        for (const ver of newLib.versions) {
+            const verInfo = {
+                libId: id,
+                versionId: ver.name,
+                versionLink: ver.link,
+            };
+            if (acts.add.includes(ver.name)) {
+                messages.newVersion(verInfo);
+            } else if (acts.update.includes(ver.name)) {
+                messages.updatedVersion(verInfo);
+            }
+        }
+        for (const ver of oldLib.versions) {
+            const verInfo = {
+                libId: id,
+                versionId: ver.name,
+                versionLink: ver.link,
+            };
+            if (acts.remove.includes(ver.name)) {
+                messages.removedVersion(verInfo);
+            }
+        }
+
+        const changedAliases = oldLib ? findChangedAliases(oldLib.aliases, newLib.aliases) : Object.entries(newLib.aliases);
+
+        changedAliases.forEach(([alias, target]) => {
+            messages.updatedAlias({libId: id, aliasName: alias, aliasTarget: target});
+        });
     });
+}
+
+function findChangedAliases(oldAliases, newAliases) {
+    return Object.entries(newAliases)
+        .filter(([alias, target]) => {
+            const old = oldAliases[alias];
+            return old !== target;
+        });
 }
 
 function hasPlannedActions(actions) {
@@ -183,4 +270,12 @@ async function setupGithubCredentials(credentials, env) {
     }
 
     await GithubProvider.setCredentials(actual.user, actual.token);
+}
+
+function initMessager({slackUrl, slackChannel}) {
+    if (slackUrl) {
+        return new SlackMessager({webhookUrl: slackUrl, channel: slackChannel});
+    } else {
+        return new NoopMessager();
+    }
 }

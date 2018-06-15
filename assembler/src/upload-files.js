@@ -97,7 +97,9 @@ module.exports.uploadFile1 = async function uploadFiles(oldManifest, newManifest
     //TODO: add cloudfront invalidation
 };
 
-exports.uploadFiles2 = async function (bucket, files, actions, manifest, cdnHost, dryRun) {
+exports.uploadFiles2 = async function (buildContext, files, actions, manifest) {
+    const {targetBucket: bucket, cdnHost, dryRun} = buildContext;
+
     log.debug(`Uploading ${files.length} files to ${bucket}`);
 
     if (dryRun) {
