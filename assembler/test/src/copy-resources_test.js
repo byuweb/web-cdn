@@ -19,6 +19,8 @@
 // const {describe, it} = require('mocha');
 const chai = require('chai');
 
+const fakeContext = require('../fixtures/fake-build-context');
+
 chai.use(require('chai-fs'));
 chai.use(require('chai-as-promised'));
 chai.use(require('../fixtures/assertFileStructure'));
@@ -39,6 +41,7 @@ describe('copy-resources', function () {
     let sourceBase;
     let assembledBase;
     let sourceDirs;
+    let context;
 
     let addActions = {
         foo: {
@@ -62,6 +65,8 @@ describe('copy-resources', function () {
         await fs.emptyDir(sourceBase);
         await fs.emptyDir(assembledBase);
         sourceDirs = await initFilesystem(sourceBase);
+
+        context = fakeContext({assembledDir: assembledBase})
     });
 
     it('should copy added versions', async function () {
@@ -69,7 +74,7 @@ describe('copy-resources', function () {
             src: 'a'
         });
 
-        await subject(manifest, addActions, sourceDirs, assembledBase);
+        await subject(context, manifest, addActions, sourceDirs);
 
         expect(assembledBase).to.have.fileStructure({
             foo: {
@@ -85,7 +90,7 @@ describe('copy-resources', function () {
             src: 'a'
         });
 
-        await subject(manifest, updateActions, sourceDirs, assembledBase);
+        await subject(context, manifest, updateActions, sourceDirs);
 
         expect(assembledBase).to.have.fileStructure({
             foo: {
@@ -101,7 +106,7 @@ describe('copy-resources', function () {
             src: 'a'
         });
 
-        await subject(manifest, addActions, sourceDirs, assembledBase);
+        await subject(context, manifest, addActions, sourceDirs);
 
         expect(path.join(assembledBase, 'foo', 'test'))
             .to.be.a.directory().and.not.have.files(['b']);
@@ -113,7 +118,7 @@ describe('copy-resources', function () {
             dest: './subdir'
         });
 
-        await subject(manifest, addActions, sourceDirs, assembledBase);
+        await subject(context, manifest, addActions, sourceDirs);
 
         expect(assembledBase).to.have.fileStructure({
             foo: {
@@ -131,7 +136,7 @@ describe('copy-resources', function () {
             src: '**/*'
         });
 
-        await subject(manifest, addActions, sourceDirs, assembledBase);
+        await subject(context, manifest, addActions, sourceDirs);
 
         expect(assembledBase).to.have.fileStructure({
             foo: {
@@ -164,7 +169,7 @@ describe('copy-resources', function () {
                 ]
             });
 
-            await subject(manifest, addActions, sourceDirs, assembledBase);
+            await subject(context, manifest, addActions, sourceDirs);
 
             expect(assembledBase).to.have.fileStructure({
                 foo: {
@@ -195,7 +200,7 @@ describe('copy-resources', function () {
                 ]
             });
 
-            await subject(manifest, addActions, sourceDirs, assembledBase);
+            await subject(context, manifest, addActions, sourceDirs);
 
             expect(assembledBase).to.have.fileStructure({
                 foo: {
@@ -220,7 +225,7 @@ describe('copy-resources', function () {
             dest: './'
         });
 
-        let promise = subject(manifest, addActions, sourceDirs, assembledBase);
+        let promise = subject(context, manifest, addActions, sourceDirs);
 
         return expect(promise).to.be.rejectedWith(/^Suspicious path pattern/);
         return expect(promise).to.be.rejectedWith(/^Suspicious path pattern '\/trying\/to\/read\/secrets'/);
@@ -232,7 +237,7 @@ describe('copy-resources', function () {
             dest: './'
         });
 
-        let promise = subject(manifest, addActions, sourceDirs, assembledBase);
+        let promise = subject(context, manifest, addActions, sourceDirs);
 
         return expect(promise).to.be.rejectedWith(/^Suspicious path pattern '..\/some\/secret\/dir'/);
     });

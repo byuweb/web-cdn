@@ -28,10 +28,12 @@ const subject = require('../../src/assemble-manifest');
 
 const sandbox = sinon.sandbox.create();
 
+const fakeContext = require('../fixtures/fake-build-context');
+
 describe('assemble-manifest', function () {
 
     it('should fetch libraries from main config', async function () {
-        let cfg = {
+        let config = {
             libraries: {
                 foo: {
                     source: 'github:foo/bar'
@@ -52,7 +54,7 @@ describe('assemble-manifest', function () {
             };
         });
 
-        let result = await subject(cfg);
+        let result = await subject(fakeContext({config}), {libraries: {}});
 
         expect(result).to.have.property('libraries').which.is.an('object')
             .which.includes.keys('foo', 'baz');

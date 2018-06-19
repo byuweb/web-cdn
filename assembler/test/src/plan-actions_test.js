@@ -20,11 +20,19 @@ const {expect} = require('chai');
 const moment = require('moment');
 const deepcopy = require('deepcopy');
 
+const fakeContext = require('../fixtures/fake-build-context');
+
 const aliases = require('../../src/aliases');
 const determineActions = require('../../src/plan-actions');
 
 
 describe('plan-actions', function () {
+
+    let context;
+
+    before(function() {
+       context = fakeContext();
+    });
 
     it('plans actions for each library and version', function () {
         let libOne = buildLib('one', ['1.0.0'], ['master', 'feature']);
@@ -35,7 +43,7 @@ describe('plan-actions', function () {
             [libTwo.name]: libTwo,
         });
 
-        let result = determineActions(m, m);
+        let result = determineActions(context, m, m);
 
         expect(result).to.not.be.null;
 
@@ -68,7 +76,7 @@ describe('plan-actions', function () {
                 [addLib.name]: addLib,
             });
 
-            let result = determineActions(one, two);
+            let result = determineActions(context, one, two);
 
             expect(result).to.not.be.null;
             expect(result).to.have.property(oldLib.name).which.deep.equals({
@@ -98,7 +106,7 @@ describe('plan-actions', function () {
                 [oldLib.name]: oldLib,
             });
 
-            let result = determineActions(one, two);
+            let result = determineActions(context, one, two);
 
             expect(result).to.not.be.null;
             expect(result).to.have.property(oldLib.name).which.deep.equals({
@@ -124,7 +132,7 @@ describe('plan-actions', function () {
             newLib.description = 'new descr';
             newLib.docs = 'https://example.com/changed';
 
-            let result = determineActions(manifest({lib: oldLib}), manifest({lib: newLib}));
+            let result = determineActions(context, manifest({lib: oldLib}), manifest({lib: newLib}));
 
             expect(result).to.have.property('lib').which.deep.equals({
                 add: [],
@@ -142,7 +150,7 @@ describe('plan-actions', function () {
 
             newLib.versions.find(it => it.name === 'feature').source_sha = 'changed';
 
-            let result = determineActions(manifest({lib: oldLib}), manifest({lib: newLib}));
+            let result = determineActions(context, manifest({lib: oldLib}), manifest({lib: newLib}));
 
             expect(result).to.have.property('lib').which.deep.equals({
                 add: [], remove: [], update: ['feature'],
@@ -156,7 +164,7 @@ describe('plan-actions', function () {
 
             newLib.versions = newLib.versions.filter(it => it.name !== 'feature');
 
-            let result = determineActions(manifest({lib: oldLib}), manifest({lib: newLib}));
+            let result = determineActions(context, manifest({lib: oldLib}), manifest({lib: newLib}));
 
             expect(result).to.have.property('lib').which.deep.equals({
                 add: [], remove: ['feature'], update: [],
@@ -171,7 +179,7 @@ describe('plan-actions', function () {
             newLib.versions.push(libVer('feature', 'branch'));
             newLib.versions.push(libVer('1.0.1', 'release'));
 
-            let result = determineActions(manifest({lib: oldLib}), manifest({lib: newLib}));
+            let result = determineActions(context, manifest({lib: oldLib}), manifest({lib: newLib}));
 
             expect(result).to.have.property('lib').which.deep.equals({
                 add: ['feature', '1.0.1'], remove: [], update: [],
@@ -192,7 +200,7 @@ describe('plan-actions', function () {
 
             newManifest['$cdn-version'] = newManifest['$cdn-version'] + '-changed';
 
-            let result = determineActions(oldManifest, newManifest);
+            let result = determineActions(context, oldManifest, newManifest);
 
             expect(result).to.have.property('one').which.deep.equals({
                 add: [], remove: [], update: ['1.0.0', 'master'],
@@ -217,7 +225,7 @@ describe('plan-actions', function () {
 
             newManifest['$cdn-version'] = newManifest['$cdn-version'] + '-changed';
 
-            let result = determineActions(oldManifest, newManifest);
+            let result = determineActions(context, oldManifest, newManifest);
 
             expect(result).to.have.property('lib').which.deep.equals({
                 add: [], remove: ['bar'], update: ['foo'], deleteLib: false
