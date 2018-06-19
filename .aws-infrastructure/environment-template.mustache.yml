@@ -345,7 +345,7 @@ Resources:
   EagerRedirectVersion{{eagerRedirect.sha}}:
     Type: AWS::Lambda::Version
     Properties:
-      FunctionName: !Ref AliasResolverFunc
+      FunctionName: !Ref EagerRedirectFunc
 
   EnhancedHeadersFunc:
     Type: AWS::Serverless::Function
