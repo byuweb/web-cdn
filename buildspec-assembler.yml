@@ -3,8 +3,6 @@ version: 0.2
 phases:
   build:
     commands:
-      - echo Slack Webhook URL $SLACK_WEBHOOK_URL
-      - echo Slack Channel $SLACK_CHANNEL
       - >-
         cdn-assembler
         --config main-config.yml
