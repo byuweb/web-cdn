@@ -95,6 +95,7 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
 
         if (!hasPlannedActions(actions)) {
             log.info("No planned actions. Exiting.");
+            await messages.sendSuccess(buildContext);
             return;
         }
 
