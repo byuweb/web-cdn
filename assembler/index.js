@@ -275,8 +275,10 @@ async function setupGithubCredentials(credentials, env) {
 
 function initMessager({slackUrl, slackChannel}) {
     if (slackUrl) {
+        console.log('Initializing Slack Messager. Callback URL', slackUrl, 'channel', slackChannel);
         return new SlackMessager({webhookUrl: slackUrl, channel: slackChannel});
     } else {
+        console.log('Initializing Console Messager');
         return new NoopMessager();
     }
 }
