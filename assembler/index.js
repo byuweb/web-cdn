@@ -38,12 +38,12 @@ const constants = require('./src/constants');
 const {NoopMessager, SlackMessager} = require('./src/messagers');
 
 module.exports = async function cdnAssembler(config, targetBucket, opts) {
-    let {workDir, githubCredentials, dryRun, env, forceBuild, cdnHost} = (opts || {});
+    let {workDir, githubCredentials, env} = (opts || {});
 
     await setupGithubCredentials(githubCredentials, env);
 
     log.info("Running assembly process");
-    if (dryRun) {
+    if (opts.dryRun) {
         log.warn("This is a dry run!")
     }
 
@@ -60,15 +60,15 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
     const buildContext = {
         config,
         targetBucket,
-        dryRun,
-        forceBuild,
+        dryRun: opts.dryRun,
+        forceBuild: opts.forceBuild,
         directories: {
             workDir,
             sourceDir,
             assembledDir,
         },
-        cdnHost,
-        env,
+        cdnHost: opts.cdnHost,
+        env: opts.env,
         messages,
         started: new Date(),
     };
@@ -92,6 +92,10 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
 
         log.info("----- Planning Actions -----");
         let actions = planActions(buildContext, oldManifest, newManifest);
+
+        if (actions.$forceUpdate) {
+            buildContext.forceBuild = true;
+        }
 
         if (!hasPlannedActions(actions)) {
             log.info("No planned actions. Exiting.");

@@ -31,7 +31,9 @@ module.exports = function diffManifest(buildContext, oldManifest, newManifest) {
         log.info('Forcing update to all versions');
     }
 
-    let diff = {};
+    let diff = {
+        '$forceUpdate': forceUpdate
+    };
 
     allLibs.forEach(libId => {
         if (!newManifest.libraries.hasOwnProperty(libId)) {
