@@ -228,14 +228,16 @@ function logPlannedActions(buildContext, actions, oldManifest, newManifest) {
                 messages.updatedVersion(verInfo);
             }
         }
-        for (const ver of oldLib.versions) {
-            const verInfo = {
-                libId: id,
-                versionId: ver.name,
-                versionLink: ver.link,
-            };
-            if (acts.remove.includes(ver.name)) {
-                messages.removedVersion(verInfo);
+        if (oldLib) {
+            for (const ver of oldLib.versions) {
+                const verInfo = {
+                    libId: id,
+                    versionId: ver.name,
+                    versionLink: ver.link,
+                };
+                if (acts.remove.includes(ver.name)) {
+                    messages.removedVersion(verInfo);
+                }
             }
         }
 
