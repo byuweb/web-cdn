@@ -149,6 +149,9 @@ libraries:
       prerelease: true
   font-metrics:
     source: github:byuweb/font-metrics-collector
+  build-test-lib:
+    source: github:ThatJoeMoore/byu-web-cdn-demo-lib
+    build: circleci
 
 infrastructure:
   environments:
