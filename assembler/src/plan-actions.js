@@ -26,14 +26,11 @@ module.exports = function diffManifest(buildContext, oldManifest, newManifest) {
         Object.keys(newManifest.libraries)
     ));
 
-    let forceUpdate = forceBuild || manifestVersionChanged(oldManifest, newManifest);
-    if (forceUpdate) {
+    if (forceBuild) {
         log.info('Forcing update to all versions');
     }
 
-    let diff = {
-        '$forceUpdate': forceUpdate
-    };
+    let diff = {};
 
     allLibs.forEach(libId => {
         if (!newManifest.libraries.hasOwnProperty(libId)) {
@@ -58,7 +55,7 @@ module.exports = function diffManifest(buildContext, oldManifest, newManifest) {
         let updatedCandidates = sets.union(oldVerIds, newVerIds);
         let updatedVersions;
 
-        if (forceUpdate) {
+        if (forceBuild) {
             updatedVersions = sets.intersection(newVerIds, updatedCandidates);
         } else {
             updatedVersions = computeChangedVersions(updatedCandidates, oldVers, newVers);
@@ -102,7 +99,4 @@ function verNameIs(id) {
     }
 }
 
-function manifestVersionChanged(oldManifest, newManifest) {
-    return oldManifest['$cdn-version'] !== newManifest['$cdn-version'];
-}
 

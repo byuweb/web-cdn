@@ -19,8 +19,30 @@
 const Glob = require('glob').Glob;
 const glob2base = require('glob2base');
 
+const DEFAULT_IGNORES = [
+    '**/.git/**',
+    '**/.cdn-config.yml',
+    '**/.gitignore',
+    '**/.circleci/**',
+];
 
 exports.match = function matchGlob(pattern, opts) {
+    if (pattern.startsWith('./')) {
+        pattern = pattern.substring(2);
+    }
+
+    const ignore = [].concat(DEFAULT_IGNORES);
+
+    if (opts.ignore) {
+        if (Array.isArray(opts.ignore)) {
+            ignore.push(...opts.ignore);
+        } else {
+            ignore.push(opts.ignore);
+        }
+    }
+
+    opts.ignore = ignore;
+
     let g = new Glob(pattern, opts);
     let base = glob2base(g);
     let promise = new Promise((resolve, reject) => {
@@ -31,3 +53,11 @@ exports.match = function matchGlob(pattern, opts) {
     promise.base = base;
     return promise;
 };
+
+(function () {
+    const path = require('path');
+    const srcDir = path.join(__dirname, '../../.tmp/build-test-lib/master');
+    exports.match('./**', {
+        cwd: srcDir, root: srcDir, nodir: true, dot: true
+    }).then(console.log);
+})();

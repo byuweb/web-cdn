@@ -107,6 +107,9 @@ module.exports = async function assembleArtifacts(buildContext, manifest, action
 
 
 function isSuspiciousPath(base, pathOrPattern) {
+    if (pathOrPattern.split(path.sep).includes('.git')) {
+        return true;
+    }
     if (path.isAbsolute(pathOrPattern)) {
         return true;
     }

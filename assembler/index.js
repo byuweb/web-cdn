@@ -80,6 +80,10 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
         log.info("----- Building new manifest -----");
         let newManifest = await assembleManifest(buildContext, oldManifest);
 
+        if (manifestVersionChanged(oldManifest, newManifest)) {
+            buildContext.forceBuild = true;
+        }
+
         await fs.writeJson(path.join(workDir, 'manifest.json'), newManifest, {
             spaces: 1,
             replacer: (key, value) => {
@@ -93,10 +97,6 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
         log.info("----- Planning Actions -----");
         let actions = planActions(buildContext, oldManifest, newManifest);
 
-        if (actions.$forceUpdate) {
-            buildContext.forceBuild = true;
-        }
-
         if (!hasPlannedActions(actions)) {
             log.info("No planned actions. Exiting.");
             await messages.sendSuccess(buildContext);
@@ -108,8 +108,8 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
         log.info("----- Downloading Sources -----");
         let sourceDirs = await downloadSources(buildContext, newManifest, actions);
 
-        log.info("----- Assembling Artifacts -----");
-        await assembleArtifacts(buildContext, newManifest, actions, sourceDirs);
+        // log.info("----- Assembling Artifacts -----");
+        // await assembleArtifacts(buildContext, newManifest, actions, sourceDirs);
 
         log.info("----- Building CDN Layout -----");
         const filesystem = await buildLayout(buildContext, oldManifest, newManifest, actions, sourceDirs);
@@ -287,4 +287,8 @@ function initMessager({slackUrl, slackChannel}) {
         console.log('Initializing Console Messager');
         return new NoopMessager();
     }
+}
+
+function manifestVersionChanged(oldManifest, newManifest) {
+    return oldManifest['$cdn-version'] !== newManifest['$cdn-version'];
 }
