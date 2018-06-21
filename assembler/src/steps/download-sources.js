@@ -1,6 +1,6 @@
 /*
  *  @license
- *    Copyright 2017 Brigham Young University
+ *    Copyright 2018 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 const fsp = require('fs-extra');
 const path = require('path');
 
-const sets = require('./util/sets');
-const providers = require('./providers');
+const sets = require('../util/sets');
+const providers = require('../providers/index');
 
 module.exports = async function downloadSources(buildContext, manifest, actions) {
     // await fsp.emptyDir(workDir);

@@ -23,7 +23,7 @@ const deepcopy = require('deepcopy');
 const fakeContext = require('../fixtures/fake-build-context');
 
 const aliases = require('../../src/aliases');
-const determineActions = require('../../src/plan-actions');
+const determineActions = require('../../src/steps/plan-actions');
 
 
 describe('plan-actions', function () {

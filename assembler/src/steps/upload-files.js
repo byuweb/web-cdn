@@ -1,6 +1,6 @@
 /*
  *  @license
- *    Copyright 2017 Brigham Young University
+ *    Copyright 2018 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -34,14 +34,14 @@ const uploadQueue = new PQueue({concurrency: os.cpus().length});
 const copyQueue = new PQueue({concurrency: os.cpus().length * 4});
 
 const s3 = require('s3').createClient(s3Opts);
-const runCommand = require('./util/run-command');
-const sets = require('./util/sets');
+const runCommand = require('../util/run-command');
+const sets = require('../util/sets');
 const path = require('path');
 
 const log = require('winston');
 const fs = require('fs-extra');
 const mime = require('mime');
-const cloudfront = require('./util/cloudfront');
+const cloudfront = require('../util/cloudfront');
 
 const LARGE_FILE_LIMIT = 768000; //768 kB
 

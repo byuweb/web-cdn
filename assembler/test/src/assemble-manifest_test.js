@@ -24,7 +24,7 @@ const moment = require('moment-timezone');
 
 const providers = require('../../src/providers');
 
-const subject = require('../../src/assemble-manifest');
+const subject = require('../../src/steps/assemble-manifest');
 
 const sandbox = sinon.sandbox.create();
 

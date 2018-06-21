@@ -1,6 +1,6 @@
 /*
  *  @license
- *    Copyright 2017 Brigham Young University
+ *    Copyright 2018 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,18 +24,16 @@ const path = require('path');
 const log = require('winston');
 const axios = require('axios');
 
-const loadGithubCredentials = require('./src/util/load-github-credentials');
-const GithubProvider = require('./src/providers/github-provider');
+const loadGithubCredentials = require('./util/load-github-credentials');
+const GithubProvider = require('./providers/github-provider');
 
-const assembleManifest = require('./src/assemble-manifest');
-const planActions = require('./src/plan-actions');
-const downloadSources = require('./src/download-sources');
-const assembleArtifacts = require('./src/copy-resources');
-const buildMeta = require('./src/build-meta');
-const {uploadFiles2} = require('./src/upload-files');
-const buildLayout = require('./src/build-layout');
-const constants = require('./src/constants');
-const {NoopMessager, SlackMessager} = require('./src/messagers');
+const assembleManifest = require('./steps/assemble-manifest');
+const planActions = require('./steps/plan-actions');
+const downloadSources = require('./steps/download-sources');
+const {uploadFiles2} = require('./steps/upload-files');
+const buildLayout = require('./steps/build-layout');
+const constants = require('./constants');
+const {NoopMessager, SlackMessager} = require('./messagers');
 
 module.exports = async function cdnAssembler(config, targetBucket, opts) {
     let {workDir, githubCredentials, env} = (opts || {});
@@ -108,20 +106,13 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
         log.info("----- Downloading Sources -----");
         let sourceDirs = await downloadSources(buildContext, newManifest, actions);
 
-        // log.info("----- Assembling Artifacts -----");
-        // await assembleArtifacts(buildContext, newManifest, actions, sourceDirs);
-
         log.info("----- Building CDN Layout -----");
         const filesystem = await buildLayout(buildContext, oldManifest, newManifest, actions, sourceDirs);
 
-        await fs.writeJson('./filesystem.json', filesystem, {spaces: 2});
+        await fs.writeJson(path.join(workDir, 'filesystem.json'), filesystem, {spaces: 2});
 
-        // log.info("----- Building Library Meta Files -----");
-        // const versionManifests = await buildMeta(newManifest, assembledDir);
-        //
         log.info("----- Uploading Files -----");
         await uploadFiles2(buildContext, filesystem, actions, newManifest);
-        // await uploadFiles(oldManifest, newManifest, versionManifests, actions, targetBucket, assembledDir, cdnHost, dryRun);
 
         await messages.sendSuccess(buildContext);
     } catch (err) {

@@ -1,6 +1,6 @@
 /*
  *  @license
- *    Copyright 2017 Brigham Young University
+ *    Copyright 2018 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,17 +17,17 @@
 
 "use strict";
 
-const providers = require('./providers');
-const constants = require('./constants');
-const aliases = require('./aliases');
-const repoConfig = require('./repo-config');
+const providers = require('../providers/index');
+const constants = require('../constants');
+const aliases = require('../aliases');
+const repoConfig = require('../repo-config');
 
 const moment = require('moment-timezone');
 const log = require('winston');
 
 const {URL} = require('url');
 
-const processBasicUsage = require('./util/basic-usage-processor');
+const processBasicUsage = require('../util/basic-usage-processor');
 
 module.exports = async function assembleManifest(buildContext, oldManifest) {
     const {config, cdnHost} = buildContext;

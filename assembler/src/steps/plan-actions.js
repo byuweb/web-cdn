@@ -1,6 +1,6 @@
 /*
  *  @license
- *    Copyright 2017 Brigham Young University
+ *    Copyright 2018 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  */
 "use strict";
 
-const sets = require('./util/sets');
+const sets = require('../util/sets');
 const log = require('winston');
 
 module.exports = function diffManifest(buildContext, oldManifest, newManifest) {

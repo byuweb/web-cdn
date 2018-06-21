@@ -99,7 +99,7 @@ async function runAssembler(args) {
 
     let config = await loadConfig(args.config);
 
-    const run = require('../index');
+    const run = require('../src/index');
     await run(config, args.bucket, {
         dryRun: args.dryRun,
         workDir: args.workDir,

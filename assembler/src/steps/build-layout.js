@@ -24,16 +24,16 @@ const brotli = require('iltorb');
 const mime = require('mime');
 const moment = require('moment-timezone');
 const deepcopy = require('deepcopy');
-const computeLinkHeader = require('./util/preload-headers');
+const computeLinkHeader = require('../util/preload-headers');
 
 const zlib = require('zlib');
 const gzipIt = promisify(zlib.gzip);
 
-const sets = require('./util/sets');
-const globs = require('./util/globs');
-const constants = require('./constants');
-const providers = require('./providers');
-const util = require('./util/util');
+const sets = require('../util/sets');
+const globs = require('../util/globs');
+const constants = require('../constants');
+const providers = require('../providers/index');
+const util = require('../util/util');
 
 const log = require('winston');
 
