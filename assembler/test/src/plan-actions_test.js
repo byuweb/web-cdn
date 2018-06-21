@@ -188,7 +188,7 @@ describe('plan-actions', function () {
         });
     });
 
-    describe('CDN version changes', function () {
+    describe('force build', function () {
         it('plans an update of all versions in all libs', function () {
             let libs = {
                 one: buildLib('one', ['1.0.0'], ['master']),
@@ -198,7 +198,7 @@ describe('plan-actions', function () {
             let oldManifest = manifest(libs);
             let newManifest = manifest(libs);
 
-            newManifest['$cdn-version'] = newManifest['$cdn-version'] + '-changed';
+            context.forceBuild = true;
 
             let result = determineActions(context, oldManifest, newManifest);
 
@@ -223,7 +223,7 @@ describe('plan-actions', function () {
             let oldManifest = manifest(oldLibs);
             let newManifest = manifest(newLibs);
 
-            newManifest['$cdn-version'] = newManifest['$cdn-version'] + '-changed';
+            context.forceBuild = true;
 
             let result = determineActions(context, oldManifest, newManifest);
 
