@@ -33,6 +33,9 @@ exports.handler = function (event, context, callback) {
 
     handler.handleRequest(request).then(
         result => callback(null, result),
-        err => callback(err)
+        err => {
+            console.error('Error processing request; continuing request', err);
+            callback(null, request);
+        }
     );
 };
