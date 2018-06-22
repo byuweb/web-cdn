@@ -1,6 +1,6 @@
 /*
  *  @license
- *    Copyright 2017 Brigham Young University
+ *    Copyright 2018 Brigham Young University
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,24 +15,6 @@
  *    limitations under the License.
  */
 
-"use strict";
-
-module.exports = {
-
-    mapLibraries(manifest, callback) {
-        return Object.entries(manifest.libraries).map(([id, lib]) => {
-           return callback(id, lib);
-        });
-    },
-
-    async promiseLibraries(manifest, fun) {
-        let result = {};
-        return Promise.all(
-            this.mapLibraries(manifest, (id, lib) => {
-                return Promise.resolve(fun(id, lib))
-                    .then(r => result[id] = r);
-            })
-        ).then(() => result);
-    }
-
-};
+export interface LibraryConfig {
+    '$config-spec': number
+}

@@ -1,4 +1,5 @@
 ---
+$config-spec: 1
 name: User-Readable Name Here
 description: User-readable description here
 type: javascript # Available types: web-component, javascript, stylesheet, font, images, unknown, other

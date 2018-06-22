@@ -157,17 +157,17 @@ infrastructure:
   environments:
     dev:
       settings:
-        root-dns: dev.cdn.byu.edu
-        account-stack-name: web-community-cdn-account
-        certificate-arn: arn:aws:acm:us-east-1:398230616010:certificate/811c7982-75e1-4565-b81b-4a4dad3e6b85
+        root_dns: dev.cdn.byu.edu
+        account_stack_name: web-community-cdn-account
+        certificate_arn: arn:aws:acm:us-east-1:398230616010:certificate/811c7982-75e1-4565-b81b-4a4dad3e6b85
     stg:
       settings:
-        root-dns: beta.cdn.byu.edu
-        account-stack-name: web-community-cdn-account
-        certificate-arn: arn:something
+        root_dns: beta.cdn.byu.edu
+        account_stack_name: web-community-cdn-account
+        certificate_arn: arn:something
     prod:
       settings:
-        root-dns: cdn.byu.edu
-        account-stack-name: web-community-cdn-account
-        certificate-arn: arn:something
+        root_dns: cdn.byu.edu
+        account_stack_name: web-community-cdn-account
+        certificate_arn: arn:something
 

@@ -1,5 +1,6 @@
 .github-api-key.json
-old-builder/
+
+lib/
 
 node_modules/
 .tmp/
