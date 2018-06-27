@@ -15,12 +15,26 @@
  *    limitations under the License.
  */
 
-import { CdnLibraryType } from '../CdnLibrary';
-import { LibraryConfig as BaseLibraryConfig} from './LibraryConfig';
+import { CdnLibraryType } from '../domain/CdnLibrary';
+import { ConfigValidation } from './Validation';
+import { LinkAs } from '../domain/dom-bits';
+
+export interface LibraryConfigFile {
+    '$config-version': number
+}
+
+export function validateLibraryConfig(config: LibraryConfigFileV1, validation: ConfigValidation) {
+    if (!config.name) {
+        validation.warning(`'name' is missing`)
+    }
+    if (config.type) {
+
+    }
+}
 
 export type ConfigLibraryType = CdnLibraryType
 
-export interface LibraryConfig extends BaseLibraryConfig {
+export interface LibraryConfigFileV1 extends LibraryConfigFile {
     name: string
     description?: string
     type?: ConfigLibraryType
@@ -30,6 +44,7 @@ export interface LibraryConfig extends BaseLibraryConfig {
     basic_usage?: ConfigBasicUsage
     preload?: ConfigPreload
     deprecated?: string
+    prerelease?: boolean
     aliases?: ConfigAliases
 }
 
@@ -73,17 +88,6 @@ export interface ConfigUsageHeadStyleDef {
     href: string
     rel?: string
     media?: string
-}
-
-export enum LinkAs {
-    script = "script",
-    style = "style",
-    image = "image",
-    video = "video",
-    audio = "audio",
-    track = "track",
-    font = "font",
-    fetch = "fetch"
 }
 
 export interface ConfigUsageHeadPreload {

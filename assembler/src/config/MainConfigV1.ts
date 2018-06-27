@@ -16,7 +16,7 @@
  */
 
 import { MainConfig as MainConfigBase } from './MainConfig';
-import { LibraryConfig as LibraryConfigV1 } from './LibraryConfigV1';
+import { LibraryConfigFile as LibraryConfigV1 } from './LibraryConfigFile';
 
 export interface MainConfig extends MainConfigBase{
     cdn: CdnConfig

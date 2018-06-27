@@ -15,34 +15,31 @@
  *    limitations under the License.
  */
 
-import { CdnVersion } from './CdnVersion';
+import { MainConfig } from "./config/MainConfigV1";
+import { Moment } from 'moment';
+import { Messager } from './messagers';
 
-export class CdnLibrary {
+export class BuildContext implements BuildContext {
     constructor(
-        readonly source: string,
-        readonly aliases: CdnLibraryAliases,
-        readonly config: any,
-        readonly versions: CdnVersion[]
+        readonly config: MainConfig,
+        readonly targetBucket: string,
+        readonly dryRun: boolean,
+        readonly forceBuild: boolean,
+        readonly directories: any,
+        readonly cdnHost: string,
+        readonly env: string,
+        readonly started: Moment,
+        readonly messager: Messager,
     ) {
     }
 }
 
-export class CdnLibraryAliases {
+export class BuildDirectories {
     constructor(
-        readonly name: string,
-        readonly target: string,
-        readonly path: string,
-        readonly redirect: boolean,
-        readonly treatAsImmutable: boolean
-    ) {}
+        readonly workDir: string,
+        readonly sourceDir: string,
+        readonly assembledDir: string,
+    ) {
+    }
 }
 
-export declare const enum CdnLibraryType {
-    webComponent = 'web-component',
-    javascript = 'javascript',
-    stylesheet = 'stylesheet',
-    font = 'font',
-    images = 'images',
-    unknown = 'unknown',
-    other = 'other'
-}

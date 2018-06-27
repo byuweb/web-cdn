@@ -15,6 +15,12 @@
  *    limitations under the License.
  */
 
-export interface LibraryConfig {
-    '$config-spec': number
-}
+"use strict";
+
+export interface Messager {}
+
+
+
+export const SlackMessager = require('./slack-messager');
+export const NoopMessager = require('./noop-messager');
+

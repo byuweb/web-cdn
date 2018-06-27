@@ -15,57 +15,43 @@
  *    limitations under the License.
  */
 
-import { Moment } from 'moment';
-import { CdnAliasRules, CdnResourceRule, IPreloadRule } from './CdnResources';
-import { LinkAs } from './dom-bits';
+import { CdnLibraryType } from '../domain/CdnLibrary';
+import { LinkAs } from '../domain/dom-bits';
 
-export enum CdnVersionType {
-    branch, release
-}
-
-export class CdnVersion {
+export class LibraryConfig {
     constructor(
         readonly name: string,
-        readonly ref: CdnVersionRefInfo,
-        readonly type: CdnVersionType,
-        readonly deployment: Deployment,
-        readonly documentation: LibraryDocumentation,
-    ) {
-    }
+        readonly type: CdnLibraryType,
+        readonly resources: LibraryResources,
+        readonly documentation: DocumentationConfig
+    ) {}
 }
 
-export class Deployment {
-    constructor(
-        // readonly path: string,
-        // readonly manifestPath: string,
-        readonly resourceRules: CdnResourceRule[],
-        readonly aliasRules: CdnAliasRules,
-        readonly preloadRules: IPreloadRule,
-    ) {
-    }
-}
+export class DocumentationConfig {
 
-export class CdnVersionRefInfo {
-    constructor(
-        readonly link: string,
-        readonly sourceLink: string,
-        readonly sourceSha: string,
-        readonly lastUpdated: Moment,
-        readonly tarballUrl: string,
-        readonly name: string,
-    ) {
-    }
-}
-
-export class LibraryDocumentation {
     constructor(
         readonly description?: string,
         readonly docsUrl?: string,
         readonly showInDirectory: boolean = true,
-        readonly usage?: LibraryBasicUsage,
     ) {
     }
 }
+
+export type LibraryResources = LibraryResource[]
+
+export interface LibraryResource {
+    src: string
+    dest: string
+    rename?: LibraryRenameRules
+}
+
+export type LibraryRenameRules = LibraryRenameRule[]
+
+export interface LibraryRenameRule {
+    regex: string
+    to: string
+}
+
 
 export interface LibraryBasicUsage {
     head: LibraryBasicUsageHead
@@ -106,5 +92,4 @@ export interface LibraryUsageHeadScriptDef {
     nomodule?: boolean
     type?: 'module' | string
 }
-
 

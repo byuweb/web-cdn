@@ -15,9 +15,16 @@
  *    limitations under the License.
  */
 
-"use strict";
+import { MainConfig as MainConfigV1 } from './MainConfigV1';
 
-module.exports = {
-    SlackMessager: require('./slack-messager'),
-    NoopMessager: require('./noop-messager'),
-};
+export function parseMainConfig(config: any): MainConfigV1 {
+    const version = config['$config-version'] || 1;
+
+    if (Number(version) === 1) {
+        return config as MainConfigV1
+    }
+    throw new Error(`Unable to parse main config: unrecognized config version '${version}'`)
+}
+
+
+

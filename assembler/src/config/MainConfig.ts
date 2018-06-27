@@ -16,5 +16,6 @@
  */
 
 export class MainConfig {
-    '$config-spec': number
+    '$config-version': number
 }
+
