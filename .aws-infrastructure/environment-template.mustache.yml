@@ -126,28 +126,6 @@ Resources:
       - Key: Name
         Value: !Sub "${CDNName} ${Environment} Contents"
 
-  LogBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      BucketName: !Sub "${CDNName}-${Environment}-logs-${AWS::Region}-${AWS::AccountId}"
-      LifecycleConfiguration:
-        Rules:
-        - Id: ExpireUnprocessedLogs
-          ExpirationInDays: 60
-          Status: Enabled
-          Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
-        - Id: UnprocessedLogsToInfrequentAccess
-          Status: Enabled
-          Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
-          Transitions:
-          - StorageClass: STANDARD_IA
-            TransitionInDays: 30
-        - Id: ExpirePreprocessedLogs
-          ExpirationInDays: 10
-          Status: Enabled
-          Prefix: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]
-
   CdnContentBucketAllowBuilderUpdates:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -313,7 +291,7 @@ Resources:
             LambdaFunctionARN: !Ref EnhancedHeadersVersion{{enhancedHeaders.sha}}
 
         Logging:
-          Bucket: !Ref LogBucket
+          Bucket: !GetAtt LogBucket.DNSName
           Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
@@ -382,6 +360,29 @@ Resources:
     Type: AWS::Lambda::Version
     Properties:
       FunctionName: !Ref EnhancedHeadersFunc
+
+  LogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${CDNName}-${Environment}-logs-${AWS::Region}-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireUnprocessedLogs
+          ExpirationInDays: 60
+          Status: Enabled
+          Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
+        - Id: UnprocessedLogsToInfrequentAccess
+          Status: Enabled
+          Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
+          Transitions:
+          - StorageClass: STANDARD_IA
+            TransitionInDays: 30
+        - Id: ExpirePreprocessedLogs
+          ExpirationInDays: 10
+          Status: Enabled
+          Prefix: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]
+
 
   LogAnalyzerSorterFunc:
     Type: AWS::Serverless::Function
