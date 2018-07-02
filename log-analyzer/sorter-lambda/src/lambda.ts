@@ -38,7 +38,7 @@ export async function handler(event: S3Event) {
             console.warn('File in wrong location in S3:', object.key);
         }
 
-        const targetPrefix = `${PREPROCESSED_PREFIX}/${eventTime.toFormat('yyyy-LL/dd/HH')}`;
+        const targetPrefix = `${PREPROCESSED_PREFIX}/${eventTime.toFormat('yyyy-LL/dd/HH')}:00/`;
 
         const sourceKey = object.key;
 
