@@ -396,7 +396,8 @@ Resources:
       Environment:
         Variables:
           TZ: 'America/Denver'
-          LOG_BUCKET: !Ref LogBucket
+          # Compute the log bucket name to avoid a circular dependency.
+          LOG_BUCKET: !Sub "${CDNName}-${Environment}-contents-${AWS::Region}-${AWS::AccountId}"
           UNPROCESSED_PREFIX: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
           PREPROCESSED_PREFIX: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]
       Role:
