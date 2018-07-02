@@ -31,7 +31,7 @@ export async function handler(event: S3Event) {
         const eventTime = DateTime.fromISO(record.eventTime).toUTC();
         const {bucket, object} = record.s3;
         if (bucket.name !== LOG_BUCKET) {
-            console.warn('Event from wrong log bucket: ', bucket);
+            console.warn('Event from wrong log bucket: ', bucket.name, 'expected', LOG_BUCKET);
             continue;
         }
         if (!object.key.startsWith(UNPROCESSED_PREFIX)) {
@@ -44,6 +44,7 @@ export async function handler(event: S3Event) {
 
         const copyTo = targetPrefix + sourceKey.substring(PREPROCESSED_PREFIX.length);
 
+        console.log('Copying from', sourceKey, 'to', copyTo);
         promises.push(s3.copyObject({
             CopySource: `${LOG_BUCKET}/${sourceKey}`,
             Bucket: LOG_BUCKET,
