@@ -79,6 +79,10 @@ Mappings:
     dev:
       user: 60
       cache: 60
+  LogPrefixes:
+    cloudfront:
+      unprocessed: cloudfront/unprocessed
+      preprocessed: cloudfront/preprocessed
 
 Resources:
 
@@ -121,6 +125,28 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "${CDNName} ${Environment} Contents"
+
+  LogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${CDNName}-${Environment}-logs-${AWS::Region}-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireUnprocessedLogs
+          ExpirationInDays: 60
+          Status: Enabled
+          Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
+        - Id: UnprocessedLogsToInfrequentAccess
+          Status: Enabled
+          Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
+          Transitions:
+          - StorageClass: STANDARD_IA
+            TransitionInDays: 30
+        - Id: ExpirePreprocessedLogs
+          ExpirationInDays: 10
+          Status: Enabled
+          Prefix: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]
 
   CdnContentBucketAllowBuilderUpdates:
     Type: AWS::S3::BucketPolicy
@@ -287,15 +313,8 @@ Resources:
             LambdaFunctionARN: !Ref EnhancedHeadersVersion{{enhancedHeaders.sha}}
 
         Logging:
-          Bucket:
-            Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucketDomain"
-          Prefix:
-            Fn::Sub:
-              - "${Logs}/${Env}/${DNS}"
-              - Logs:
-                  Fn::ImportValue: !Sub "${AccountStackName}-InfraBucketLogsPrefix"
-                Env: !Ref Environment
-                DNS: !Ref RootDNS
+          Bucket: !Ref LogBucket
+          Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
         IPV6Enabled: true
@@ -379,20 +398,13 @@ Resources:
         s3log:
           Type: S3
           Properties:
-            Bucket:
-              Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucket"
+            Bucket: !Ref LogBucket
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
                 Rules:
                   - Name: prefix
-                    Value:
-                      Fn::Sub:
-                        - "${Logs}/${Env}/${DNS}"
-                        - Logs:
-                            Fn::ImportValue: !Sub "${AccountStackName}-InfraBucketLogsPrefix"
-                          Env: !Ref Environment
-                          DNS: !Ref RootDNS
+                    Value: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
 
 Outputs:
   ContentBucket:
