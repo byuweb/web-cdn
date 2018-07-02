@@ -383,10 +383,10 @@ Resources:
           Status: Enabled
           Prefix: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]
 
-  CdnContentBucketAllowBuilderUpdates:
+  LogBucketAllowLogPutsUpdates:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref CdnContentBucket
+      Bucket: !Ref LogBucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -398,14 +398,14 @@ Resources:
               - s3:ListBucket
               - s3:PutBucketWebsite
               - s3:Get*
-            Resource: !Sub "arn:aws:s3:::${CdnContentBucket}"
+            Resource: !Sub "arn:aws:s3:::${LogBucket}"
           - Effect: Allow
             Principal:
               AWS:
                 Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
             Action:
               - s3:*
-            Resource: !Sub "arn:aws:s3:::${CdnContentBucket}/*"
+            Resource: !Sub "arn:aws:s3:::${LogBucket}/*"
 
   LogAnalyzerSorterFunc:
     Type: AWS::Serverless::Function
