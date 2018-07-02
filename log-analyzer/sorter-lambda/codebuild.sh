@@ -4,8 +4,12 @@ echo "=========== Building Sorter Lambda ==========="
 
 set -e
 
+yarn
+
 yarn build
 
 rm -rf node_modules
 
-yarn --production --ignore-optional
+yarn --production
+
+zip -r9 packaged.zip lib node_modules

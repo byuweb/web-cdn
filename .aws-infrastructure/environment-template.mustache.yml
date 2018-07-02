@@ -383,11 +383,34 @@ Resources:
           Status: Enabled
           Prefix: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]
 
+  CdnContentBucketAllowBuilderUpdates:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CdnContentBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
+            Action:
+              - s3:ListBucket
+              - s3:PutBucketWebsite
+              - s3:Get*
+            Resource: !Sub "arn:aws:s3:::${CdnContentBucket}"
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
+            Action:
+              - s3:*
+            Resource: !Sub "arn:aws:s3:::${CdnContentBucket}/*"
 
   LogAnalyzerSorterFunc:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${CDNName}-LogAnalyzer-Sorter"
+      FunctionName: !Sub "${CDNName}-${Environment}-LogAnalyzer-Sorter"
       CodeUri: ./../log-analyzer/sorter-lambda/
       Handler: lib/lambda.handler
       Runtime: nodejs8.10
@@ -397,7 +420,7 @@ Resources:
         Variables:
           TZ: 'America/Denver'
           # Compute the log bucket name to avoid a circular dependency.
-          LOG_BUCKET: !Sub "${CDNName}-${Environment}-contents-${AWS::Region}-${AWS::AccountId}"
+          LOG_BUCKET: !Sub "${CDNName}-${Environment}-logs-${AWS::Region}-${AWS::AccountId}"
           UNPROCESSED_PREFIX: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
           PREPROCESSED_PREFIX: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]
       Role:
