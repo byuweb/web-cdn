@@ -71,6 +71,8 @@ exports.handler = (event, context, callback) => {
 
     response.status = status;
 
+    // "A man is not dead while his name is still spoken."
+    // - Going Postal, Chapter 4 prologue
     setHeader(response, 'X-Clacks-Overhead', 'GNU Terry Pratchett');
 
     console.log('Sending response', JSON.stringify(response, null, 2));
