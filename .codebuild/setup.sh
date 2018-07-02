@@ -10,9 +10,9 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.lis
 
 curl -sL https://deb.nodesource.com/setup_8.x | bash -
 
-apt-get update -q && apt-get install -yq nodejs yarn jq
+apt-get update -q && apt-get install -yq nodejs yarn #jq
 
-pip install yq
+#pip install yq
 
 echo "Installing lerna"
 

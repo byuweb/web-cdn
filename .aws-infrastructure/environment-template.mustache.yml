@@ -291,7 +291,7 @@ Resources:
             LambdaFunctionARN: !Ref EnhancedHeadersVersion{{enhancedHeaders.sha}}
 
         Logging:
-          Bucket: !GetAtt LogBucket.DNSName
+          Bucket: !GetAtt LogBucket.DomainName
           Prefix: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
