@@ -364,6 +364,36 @@ Resources:
     Properties:
       FunctionName: !Ref EnhancedHeadersFunc
 
+  LogAnalyzerSorterFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${CDNName}-LogAnalyzer-Sorter"
+      CodeUri: ./../log-analyzer/sorter-lambda/
+      Handler: lib/lambda.handler
+      Runtime: nodejs8.10
+      MemorySize: 128
+      Timeout: 20
+      Role:
+        Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
+      Events:
+        s3log:
+          Type: S3
+          Properties:
+            Bucket:
+              Fn::ImportValue: !Sub "${AccountStackName}-InfraAndLogBucket"
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value:
+                      Fn::Sub:
+                        - "${Logs}/${Env}/${DNS}"
+                        - Logs:
+                            Fn::ImportValue: !Sub "${AccountStackName}-InfraBucketLogsPrefix"
+                          Env: !Ref Environment
+                          DNS: !Ref RootDNS
+
 Outputs:
   ContentBucket:
     Value: !Ref CdnContentBucket

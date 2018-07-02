@@ -3,7 +3,8 @@
   "packages": [
     "assembler",
     "edge-lambdas/*",
-    "webhooks"
+    "webhooks",
+    "log-analyzer/sorter-lambda"
   ],
   "version": "1.0.0",
   "npmClient": "yarn",
