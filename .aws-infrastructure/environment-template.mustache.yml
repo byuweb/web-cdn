@@ -395,6 +395,7 @@ Resources:
       Timeout: 20
       Environment:
         Variables:
+          TZ: 'America/Denver'
           LOG_BUCKET: !Ref LogBucket
           UNPROCESSED_PREFIX: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
           PREPROCESSED_PREFIX: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]

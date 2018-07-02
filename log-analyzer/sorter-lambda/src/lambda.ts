@@ -19,15 +19,49 @@ import { S3Event } from 'aws-lambda';
 import { S3 } from 'aws-sdk';
 import { DateTime } from 'luxon';
 
+const LOG_BUCKET = requireEnv('LOG_BUCKET');
+const UNPROCESSED_PREFIX = requireEnv('UNPROCESSED_PREFIX');
+const PREPROCESSED_PREFIX = requireEnv('PREPROCESSED_PREFIX');
+
 export async function handler(event: S3Event) {
     console.log('event:', JSON.stringify(event, null, 2));
     const s3 = new S3();
+    const promises: Promise<any>[] = [];
     for (const record of event.Records) {
-        const now = DateTime.local();
-        const target =
+        const eventTime = DateTime.fromISO(record.eventTime).toUTC();
+        const {bucket, object} = record.s3;
+        if (bucket.name !== LOG_BUCKET) {
+            console.warn('Event from wrong log bucket: ', bucket);
+            continue;
+        }
+        if (!object.key.startsWith(UNPROCESSED_PREFIX)) {
+            console.warn('File in wrong location in S3:', object.key);
+        }
+
+        const targetPrefix = `${PREPROCESSED_PREFIX}/${eventTime.toFormat('yyyy-LL/dd/HH')}`;
+
+        const sourceKey = object.key;
+
+        const copyTo = targetPrefix + sourceKey.substring(PREPROCESSED_PREFIX.length);
+
+        promises.push(s3.copyObject({
+            CopySource: `${LOG_BUCKET}/${sourceKey}`,
+            Bucket: LOG_BUCKET,
+            Key: copyTo,
+        }).promise());
     }
+
+    await Promise.all(promises);
     console.log('Done');
 }
+
+function requireEnv(name: string): string {
+    if (!(name in process.env)) {
+        throw new Error('Missing required env var: ' + name);
+    }
+    return process.env[name] as string;
+}
+
 
 /*
 PUT Object

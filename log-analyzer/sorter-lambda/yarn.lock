@@ -10,21 +10,9 @@
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@types/luxon/-/luxon-1.2.0.tgz#fa52e0d1cb0966a0190b8b7409b1d7e76aacd055"
 
-"@types/node@*", "@types/node@^10.3.6":
+"@types/node@^10.3.6":
   version "10.5.1"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.5.1.tgz#d578446f4abff5c0b49ade9b4e5274f6badaadfc"
-
-"@types/split2@^2.1.6":
-  version "2.1.6"
-  resolved "https://registry.yarnpkg.com/@types/split2/-/split2-2.1.6.tgz#b095c9e064853824b22c67993d99b066777402b1"
-  dependencies:
-    "@types/node" "*"
-
-"@types/through2@^2.0.33":
-  version "2.0.33"
-  resolved "https://registry.yarnpkg.com/@types/through2/-/through2-2.0.33.tgz#1ff2e88a100dfb5b140e7bb98791f1194400d131"
-  dependencies:
-    "@types/node" "*"
 
 arrify@^1.0.0:
   version "1.0.1"
@@ -60,10 +48,6 @@ buffer@4.9.1:
     ieee754 "^1.1.4"
     isarray "^1.0.0"
 
-core-util-is@~1.0.0:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/core-util-is/-/core-util-is-1.0.2.tgz#b5fd54220aa2bc5ab57aab7140c940754503c1a7"
-
 diff@^3.1.0:
   version "3.5.0"
   resolved "https://registry.yarnpkg.com/diff/-/diff-3.5.0.tgz#800c0dd1e0a8bfbc95835c202ad220fe317e5a12"
@@ -80,11 +64,7 @@ ieee754@^1.1.4:
   version "1.1.12"
   resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.1.12.tgz#50bf24e5b9c8bb98af4964c941cdb0918da7b60b"
 
-inherits@^2.0.1, inherits@~2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/inherits/-/inherits-2.0.3.tgz#633c2c83e3da42a502f52466022480f4208261de"
-
-isarray@^1.0.0, isarray@~1.0.0:
+isarray@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/isarray/-/isarray-1.0.0.tgz#bb935d48582cba168c06834957a54a3e07124f11"
 
@@ -118,10 +98,6 @@ mkdirp@^0.5.1:
   dependencies:
     minimist "0.0.8"
 
-process-nextick-args@~2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.0.tgz#a37d732f4271b4ab1ad070d35508e8290788ffaa"
-
 punycode@1.3.2:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-1.3.2.tgz#9653a036fb7c1ee42342f2325cceefea3926c48d"
@@ -129,22 +105,6 @@ punycode@1.3.2:
 querystring@0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/querystring/-/querystring-0.2.0.tgz#b209849203bb25df820da756e747005878521620"
-
-readable-stream@^2.1.0, readable-stream@^2.1.5:
-  version "2.3.6"
-  resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-2.3.6.tgz#b11c27d88b8ff1fbe070643cf94b0c79ae1b0aaf"
-  dependencies:
-    core-util-is "~1.0.0"
-    inherits "~2.0.3"
-    isarray "~1.0.0"
-    process-nextick-args "~2.0.0"
-    safe-buffer "~5.1.1"
-    string_decoder "~1.1.1"
-    util-deprecate "~1.0.1"
-
-safe-buffer@~5.1.0, safe-buffer@~5.1.1:
-  version "5.1.2"
-  resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
 
 sax@1.2.1:
   version "1.2.1"
@@ -164,32 +124,6 @@ source-map-support@^0.5.6:
 source-map@^0.6.0:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.6.1.tgz#74722af32e9614e9c287a8d0bbde48b5e2f1a263"
-
-split2@^2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/split2/-/split2-2.2.0.tgz#186b2575bcf83e85b7d18465756238ee4ee42493"
-  dependencies:
-    through2 "^2.0.2"
-
-string-to-stream@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/string-to-stream/-/string-to-stream-1.1.1.tgz#aba78f73e70661b130ee3e1c0192be4fef6cb599"
-  dependencies:
-    inherits "^2.0.1"
-    readable-stream "^2.1.0"
-
-string_decoder@~1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/string_decoder/-/string_decoder-1.1.1.tgz#9cf1611ba62685d7030ae9e4ba34149c3af03fc8"
-  dependencies:
-    safe-buffer "~5.1.0"
-
-through2@^2.0.2, through2@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/through2/-/through2-2.0.3.tgz#0004569b37c7c74ba39c43f3ced78d1ad94140be"
-  dependencies:
-    readable-stream "^2.1.5"
-    xtend "~4.0.1"
 
 ts-node@^7.0.0:
   version "7.0.0"
@@ -215,10 +149,6 @@ url@0.10.3:
     punycode "1.3.2"
     querystring "0.2.0"
 
-util-deprecate@~1.0.1:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
-
 uuid@3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.1.0.tgz#3dd3d3e790abc24d7b0d3a034ffababe28ebbc04"
@@ -235,10 +165,6 @@ xmlbuilder@^4.1.0:
   resolved "https://registry.yarnpkg.com/xmlbuilder/-/xmlbuilder-4.2.1.tgz#aa58a3041a066f90eaa16c2f5389ff19f3f461a5"
   dependencies:
     lodash "^4.0.0"
-
-xtend@~4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.1.tgz#a5c6d532be656e23db820efb943a1f04998d63af"
 
 yn@^2.0.0:
   version "2.0.0"
