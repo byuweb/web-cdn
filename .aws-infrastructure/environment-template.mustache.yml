@@ -393,6 +393,11 @@ Resources:
       Runtime: nodejs8.10
       MemorySize: 128
       Timeout: 20
+      Environment:
+        Variables:
+          LOG_BUCKET: !Ref LogBucket
+          UNPROCESSED_PREFIX: !FindInMap [ LogPrefixes, cloudfront, unprocessed ]
+          PREPROCESSED_PREFIX: !FindInMap [ LogPrefixes, cloudfront, preprocessed ]
       Role:
         Fn::ImportValue: !Sub "${AccountStackName}-EdgeLambdaExecutionRole"
       Events:

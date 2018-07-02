@@ -16,29 +16,19 @@
  */
 
 import { S3Event } from 'aws-lambda';
-import {S3} from 'aws-sdk';
+import { S3 } from 'aws-sdk';
+import { DateTime } from 'luxon';
 
 export async function handler(event: S3Event) {
     console.log('event:', JSON.stringify(event, null, 2));
-    // for (const record of event.Records) {
-    //
-    // }
+    const s3 = new S3();
+    for (const record of event.Records) {
+        const now = DateTime.local();
+        const target =
+    }
     console.log('Done');
 }
 
-/*
-Test Message
-
-{
-   "Service":"Amazon S3",
-   "Event":"s3:TestEvent",
-   "Time":"2014-10-13T15:57:02.089Z",
-   "Bucket":"bucketname",
-   "RequestId":"5582815E1AEA5ADF",
-   "HostId":"8cLeGAmw098X5cv4Zkwcmo8vvZa3eH3eKxsPzbB9wrR+YstdA6Knx4Ip8EXAMPLE"
-}
-
- */
 /*
 PUT Object
 
