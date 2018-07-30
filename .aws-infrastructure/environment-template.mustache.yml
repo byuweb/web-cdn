@@ -260,6 +260,7 @@ Resources:
         ViewerCertificate:
           AcmCertificateArn: !Ref CertificateArn
           SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2018
         DefaultCacheBehavior:
           AllowedMethods: [GET, HEAD, OPTIONS]
           Compress: true
