@@ -18,16 +18,21 @@
 
 const spawn = require('child-process-promise').spawn;
 const log = require('winston');
+const {EOL} = require('os');
 
 module.exports = function runCmd(tag, command, args) {
     let promise = spawn(command, args);
     let proc = promise.childProcess;
 
     proc.stdout.on('data', function (data) {
-        log.debug(`[${tag}] stdout: `, data.toString());
+        data.toString().split(EOL).forEach(line => {
+            log.debug(`[${tag}] stdout: `, line);
+        });
     });
     proc.stderr.on('data', function (data) {
-        log.warn(`[${tag}] stderr: `, data.toString());
+        data.toString().split(EOL).forEach(line => {
+            log.warn(`[${tag}] stderr: `, line);
+        });
     });
     return promise;
 };

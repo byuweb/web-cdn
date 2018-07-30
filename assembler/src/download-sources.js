@@ -24,14 +24,14 @@ const providers = require('./providers');
 
 module.exports = async function downloadSources(buildContext, manifest, actions) {
     // await fsp.emptyDir(workDir);
-    const {workDir} = buildContext.directories;
+    const {sourceDir} = buildContext.directories;
 
-    await fsp.ensureDir(workDir);
+    await fsp.ensureDir(sourceDir);
 
     let result = {};
 
     let promises = Object.entries(manifest.libraries).map(async function ([id, defn]) {
-        let dir = path.join(workDir, id);
+        let dir = path.join(sourceDir, id);
 
         let libActions = actions[id];
 

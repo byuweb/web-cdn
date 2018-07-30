@@ -102,16 +102,19 @@ exports.uploadFiles2 = async function (buildContext, files, actions, manifest) {
 
     log.debug(`Uploading ${files.length} files to ${bucket}`);
 
+    const staging = path.join(buildContext.directories.workDir, 's3-staging');
+
+    await stageContents(files, staging);
+
+    log.info('Uploading file contents');
+    await uploadContents(bucket, staging, dryRun);
+
     if (dryRun) {
         log.debug('Dry Run. Skipping.');
         return;
     }
 
-    log.info('Uploading file contents');
-    await uploadContents(bucket, files);
-
     log.info('Copying file contents');
-
     await copyFilesToDestination(bucket, files);
 
     log.info('Updating Manifest');
@@ -141,42 +144,51 @@ async function invalidateInfraFiles(files, cdnHost, dryRun) {
     await cloudfront.invalidate(id, paths);
 }
 
-async function uploadContents(bucket, files) {
-    const copied = new Set();
-
-    return batch(uploadQueue, files, async file => {
-        const sha = file.fileSha512;
-
-        if (copied.has(sha)) {
-            return;
-        }
-
-        const s3Key = LARGE_FILE_PREFIX + sha;
-
-        if (!await existsInS3(bucket, s3Key)) {
-            await uploadFileContents(bucket, s3Key, file);
-        }
-        copied.add(sha);
-    });
+function stageNameFor(file) {
+    return path.basename(file.cdnPath).toLowerCase() + '__' + file.fileSha512;
 }
 
-async function uploadFileContents(bucket, s3Key, file) {
-    let body;
-    if (file.contentPath) {
-        body = fs.createReadStream(file.contentPath);
-    } else if (file.contents) {
-        body = file.contents;
-    } else {
-        body = '';
+async function stageContents(files, dir) {
+    log.info('Staging file contents into', dir);
+    await fs.emptyDir(dir);
+
+    const copied = new Set();
+
+    for (const file of files) {
+        const stageName = stageNameFor(file);
+
+        const dest = path.join(dir, stageName);
+
+        if (copied.has(stageName)) {
+            continue;
+        }
+
+        if (file.contentPath) {
+            log.debug('Copying', file.contentPath, 'to', dest);
+            await fs.copy(file.contentPath, dest);
+        } else if (file.hasOwnProperty('contents')) {
+            log.debug('Writing contents to', dest);
+            await fs.writeFile(dest, file.contents);
+        }
+    }
+}
+
+async function uploadContents(bucket, dir, dryRun) {
+    log.debug('Syncing file contents with S3');
+    const args = [
+        's3',
+        'sync',
+        dir,
+        `s3://${bucket}/${LARGE_FILE_PREFIX}`,
+        '--acl', 'private',
+        '--size-only'
+    ];
+
+    if (dryRun) {
+        args.push('--dryrun')
     }
 
-    await s3Client.putObject({
-        Bucket: bucket,
-        Key: s3Key,
-        ACL: 'private',
-        Body: body,
-        ContentType: file.type
-    }).promise();
+    await runCommand('S3 Content Sync', 'aws', args);
 }
 
 function normalizeS3Key(key) {
@@ -188,20 +200,17 @@ function normalizeS3Key(key) {
 
 async function copyFilesToDestination(bucket, files) {
     return batch(copyQueue, files, async file => {
-        const sha = file.fileSha512;
-        if (!sha) {
-            return;
-        }
+        const stageName = stageNameFor(file);
+
         const config = {
             Bucket: bucket,
             ACL: 'public-read',
             CacheControl: file.meta.cacheControl,
             ContentType: file.type,
-            CopySource: `/${bucket}/${LARGE_FILE_PREFIX}${sha}`,
+            CopySource: `/${bucket}/${LARGE_FILE_PREFIX}${stageName}`,
             Key: normalizeS3Key(file.cdnPath),
             Metadata: metadataForFile(file),
             MetadataDirective: "REPLACE",
-
         };
 
         if (file.meta.redirect) {
@@ -211,7 +220,7 @@ async function copyFilesToDestination(bucket, files) {
             config.WebsiteRedirectLocation = file.meta.redirect.location;
         }
 
-        log.debug(`Copying ${sha} to ${config.Key}`);
+        log.debug(`Copying to ${config.Key} from ${stageName}`);
         try {
             await s3Client.copyObject(config).promise();
         } catch (e) {

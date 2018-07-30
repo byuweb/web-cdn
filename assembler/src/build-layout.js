@@ -69,8 +69,15 @@ module.exports = async function buildLayout(buildContext, oldManifest, newManife
     files.push(...await getRedirectFiles(newManifest));
 
     files.forEach(it => {
-        let sha = 'empty';
-        if (it.hashes) {
+        if (it.fileSha512) {
+            return;
+        }
+        let sha = 'unknown-sha';
+        if (it.meta && it.meta.redirect) {
+            sha = 'redirect';
+        } else if (it.empty) {
+            sha = 'empty';
+        } if (it.hashes) {
             sha = it.hashes.sha512.hex;
         } else if (it.contents) {
             sha = util.hash('sha512', Buffer.from(it.contents)).hex;
@@ -332,6 +339,7 @@ async function processSourceFile(ver, file, cacheControl) {
                 'CDN-Version-Sha': ver.source_sha,
             }
         },
+        empty: size.unencoded === 0,
     }
 }
 
@@ -358,6 +366,8 @@ function processVersionAliasFiles(libId, lib, ver, verPrefix, verFiles) {
                 };
                 delete copy.contentPath;
                 copy.contents = '';
+                delete copy.hashes;
+                copy.empty = true;
             }
             return copy;
         });
