@@ -114,8 +114,8 @@ exports.uploadFiles2 = async function (buildContext, files, actions, manifest) {
 
     await copyFilesToDestination(bucket, files);
 
-    log.info('Updating Manifest');
-    await uploadManifest(bucket, manifest, dryRun);
+    // log.info('Updating Manifest');
+    // await uploadManifest(bucket, manifest, dryRun);
 
     log.info('Invalidate Infra files');
     await invalidateInfraFiles(files, cdnHost, dryRun);
