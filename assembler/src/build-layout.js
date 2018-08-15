@@ -42,6 +42,8 @@ const CACHE_CONTROL_FIVE_MINUTES = 'public, max-age=300, s-maxage=300';
 const CACHE_CONTROL_ONE_HOUR = 'public, max-age=3600, s-maxage=900';
 const CACHE_CONTROL_ONE_MINUTE = 'public, max-age=60, s-maxage=0';
 
+const CACHE_CONTROL_FIVE_MINUTES_REVALIDATE = 'public, must-revalidate, proxy-revalidate, max-age=300, s-maxage=60';
+
 const REDIRECTS_PATH = '/.cdn-infra/redirects.json';
 
 module.exports = async function buildLayout(buildContext, oldManifest, newManifest, actions, sourceDirs) {
@@ -67,6 +69,7 @@ module.exports = async function buildLayout(buildContext, oldManifest, newManife
     }
 
     files.push(...await getRedirectFiles(newManifest));
+    files.push(buildManifestFile(newManifest));
 
     files.forEach(it => {
         if (it.fileSha512) {
@@ -87,6 +90,25 @@ module.exports = async function buildLayout(buildContext, oldManifest, newManife
 
     return files;
 };
+
+function buildManifestFile(manifest) {
+    return {
+        name: 'manifest.json',
+        cdnPath: 'manifest.json',
+        type: 'application/json',
+        contents: JSON.stringify(manifest),
+        invalidate: true,
+        meta: {
+            cacheControl: CACHE_CONTROL_FIVE_MINUTES_REVALIDATE,
+            headers: {
+                'Timing-Allow-Origin': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD',
+                'Access-Control-Max-Age': '86400',
+            },
+        },
+    }
+}
 
 async function getRedirectFiles(newManifest) {
     const redirects = buildRedirectRules(newManifest);
