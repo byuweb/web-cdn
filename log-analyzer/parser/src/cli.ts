@@ -16,14 +16,13 @@
  */
 
 
-import { parseElfFile } from './elf-parser';
+import { LogRow, parseElfFile } from './elf-parser';
 import { createReadStream } from 'fs';
 import { createGunzip } from 'zlib';
-import { schema } from './parequetify';
-import { ParquetWriter } from 'parquets';
+import { URL } from 'url';
+import { OldFontsReport } from './reports/OldFontsReport';
+import { allReports } from './reports';
 import ReadStream = NodeJS.ReadStream;
-import moment from 'moment';
-import {URL} from 'url';
 
 // const input = createReadStream('../examples/short.log');
 // const input = createReadStream('../examples/real-log.log');
@@ -44,58 +43,98 @@ function parseReferrer(value: string | undefined) {
     }
 }
 
+async function processFile(input) {
+    return new Promise((resolve, reject) => {
+        const reports = allReports();
+
+
+        parseElfFile(input)
+            .on('data', line => {
+                reports.forEach(rept => rept.consume(line))
+            })
+            .on('end', () => {
+                const results = {};
+                reports.forEach(rept => results[rept.name] = rept.getResult())
+                resolve(results);
+            })
+            .on('error', e => {
+                reject(e);
+            });
+    });
+}
+
 (async () => {
     const lines = await parseFile(input);
 
-    let writer = await ParquetWriter.openFile(schema, 'lines.parquet');
+    const reports = allReports();
 
-    for (const l of lines) {
-        const rq = l.request;
-        const ua = rq.userAgent;
+    const results = {};
 
-        const referrer = parseReferrer(rq.referrer);
-
-        await writer.appendRow({
-            date: moment(l.date + 'T' + l.time + 'Z').toDate(),
-            edge_location: l.edgeLocation,
-            response: {
-                size: l.response.size,
-                status: l.response.status,
-                type: l.response.type,
-                initial_type: l.response.initialType,
-            },
-            user_agent: {
-                ua: ua.ua,
-                browser: ua.browser.name,
-                browser_version: ua.browser.version,
-                browser_major: ua.browser.major,
-                os: ua.os.name,
-                os_version: ua.os.version,
-                device_type: ua.device.type,
-                device_vendor: ua.device.vendor,
-                device_model: ua.device.model,
-            },
-            request: {
-                ip: rq.ip,
-                method: rq.method,
-                path: rq.path,
-                origin: referrer.origin,
-                referrer: referrer.referrer,
-                protocol: rq.protocol,
-            },
-            ssl: {
-                protocol: rq.ssl.protocol,
-                cipher: rq.ssl.cipher,
-            },
-            http_version: rq.httpVersion,
-            duration: l.duration
+    parseElfFile(input)
+        .on('data', line => {
+            reports.forEach(rept => rept.consume(line))
+        })
+        .on('end', () => {
+            reports.forEach(rept => results[rept.getResult()])
+        })
+        .on('error', e => {
+            console.error(e);
+            process.exit(1)
         });
-    }
 
-    await writer.close();
+    const rept = new OldFontsReport();
+    lines.forEach(it => rept.consume(it));
+    console.log(rept.getResult())
+
+    // let writer = await ParquetWriter.openFile(schema, 'lines.parquet');
+    //
+    // for (const l of lines) {
+    //     const rq = l.request;
+    //     const ua = rq.userAgent;
+    //
+    //     const referrer = parseReferrer(rq.referrer);
+    //
+    //     await writer.appendRow({
+    //         date: moment(l.date + 'T' + l.time + 'Z').toDate(),
+    //         edge_location: l.edgeLocation,
+    //         response: {
+    //             size: l.response.size,
+    //             status: l.response.status,
+    //             type: l.response.type,
+    //             initial_type: l.response.initialType,
+    //         },
+    //         user_agent: {
+    //             ua: ua.ua,
+    //             browser: ua.browser.name,
+    //             browser_version: ua.browser.version,
+    //             browser_major: ua.browser.major,
+    //             os: ua.os.name,
+    //             os_version: ua.os.version,
+    //             device_type: ua.device.type,
+    //             device_vendor: ua.device.vendor,
+    //             device_model: ua.device.model,
+    //         },
+    //         request: {
+    //             ip: rq.ip,
+    //             method: rq.method,
+    //             path: rq.path,
+    //             origin: referrer.origin,
+    //             referrer: referrer.referrer,
+    //             protocol: rq.protocol,
+    //         },
+    //         ssl: {
+    //             protocol: rq.ssl.protocol,
+    //             cipher: rq.ssl.cipher,
+    //         },
+    //         http_version: rq.httpVersion,
+    //         duration: l.duration
+    //     });
+    // }
+    //
+    // await writer.close();
 })().catch(err => console.error(err));
 
-function parseFile(input: ReadStream): Promise<any[]> {
+function parseFile(input: ReadStream): Promise<LogRow[]> {
     return new Promise((resolve, reject) => {
         const lines: any[] = [];
         parseElfFile(input)

@@ -92,8 +92,34 @@ function decodeValue(value: string | undefined) {
         return undefined;
     }
     // Yes, we get to decode this twice. Thanks, CloudFront.
-    return decodeURIComponent(decodeURIComponent(value));
+    try {
+        // return decodeURIComponent(decodeURIComponent(value));
+        return Object.entries(stringReplacements)
+            .reduce((str, [pct, value]) => str.replace(new RegExp(pct, 'g'), value), value);
+    } catch (err) {
+        console.error('Invalid URI component', value, err);
+        return undefined;
+    }
 }
+
+const stringReplacements = {
+    '%3C': '<',
+    '%3E': '>',
+    '%2522': '"',
+    '%23': '#',
+    '%25': '%',
+    '%7B': '{',
+    '%7D': '}',
+    '%7C': '|',
+    '%255C': '\\',
+    '%5E': '^',
+    '%7E': '~',
+    '%5B': '[',
+    '%5D': ']',
+    '%60': '`',
+    '%27': '\'',
+    '%2520': ' '
+};
 
 const fieldPathsMappings = {
     'date': 'date',
@@ -117,7 +143,7 @@ const fieldPathsMappings = {
     'x-edge-response-result-type': {path: 'response.initialType', transform: parseResultType},
     'cs-protocol-version': 'request.httpVersion',
     'cs(User-Agent)': {path: 'request.userAgent', transform: parseUA},
-    'cs(Referer)': 'request.referrer'
+    'cs(Referer)': {path: 'request.referrer', transform: parseUrl}
 };
 
 export interface LogRow {
@@ -125,15 +151,36 @@ export interface LogRow {
     time: string
     edgeLocation: string
     duration: number
-
+    request: LogRequest
+    response: LogResponse
 }
 
 export interface LogRequest {
+    ip: string
+    method: string
+    path: string
+    queryString: string
+    id: string
+    host: string
+    protocol: string
+    size: number
+    proxy: string
+    ssl: RequestSSL
+    httpVersion: string
+    userAgent: RequestUserAgent
+    referrer: URL
+}
 
+export interface RequestSSL {
+    protocol: string
+    cipher: string
 }
 
 export interface LogResponse {
-
+    size: number
+    status: number
+    type: ResultType
+    initialType: ResultType
 }
 
 const headerPattern = /cs\((.+?)\)/;
@@ -202,14 +249,22 @@ function parseEdgeLocation(code: string): string {
 
 function parseResultType(code: string): ResultType | undefined {
     switch (code) {
-        case 'Hit': return ResultType.Hit;
-        case 'RefreshHit': return ResultType.Refresh;
-        case 'Miss': return ResultType.Miss;
-        case 'LimitExceeded': return ResultType.LimitExceeded;
-        case 'CapacityExceeded': return ResultType.CapacityExceeded;
-        case 'Error': return ResultType.Error;
-        case 'Redirect': return ResultType.RedirectToHttps;
-        default: return undefined;
+        case 'Hit':
+            return ResultType.Hit;
+        case 'RefreshHit':
+            return ResultType.Refresh;
+        case 'Miss':
+            return ResultType.Miss;
+        case 'LimitExceeded':
+            return ResultType.LimitExceeded;
+        case 'CapacityExceeded':
+            return ResultType.CapacityExceeded;
+        case 'Error':
+            return ResultType.Error;
+        case 'Redirect':
+            return ResultType.RedirectToHttps;
+        default:
+            return undefined;
     }
 }
 
@@ -223,7 +278,7 @@ export enum ResultType {
     RedirectToHttps = 'redirect_to_https',
 }
 
-function parseUA(ua: string) {
+function parseUA(ua: string): RequestUserAgent {
     const parsed = new UAParser(ua);
 
     return {
@@ -232,4 +287,27 @@ function parseUA(ua: string) {
         os: parsed.getOS(),
         device: parsed.getDevice()
     }
+}
+
+import {URL} from 'url';
+
+function parseUrl(u: string | null): URL | null {
+    if (!u) return null;
+    if (!u.startsWith('http://') && !u.startsWith('https://')) {
+        console.error('-------- Invalid URL: ' + u + ' -----------');
+        u = 'http://' + u;
+    }
+    try {
+        return new URL(u);
+    } catch (err) {
+        console.error('Invalid URL', u, err);
+        return null;
+    }
+}
+
+interface RequestUserAgent {
+    ua: string
+    browser?: IUAParser.IBrowser
+    os?: IUAParser.IOS
+    device?: IUAParser.IDevice
 }
