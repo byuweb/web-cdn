@@ -60,10 +60,8 @@ use the major version - `1` or `2` in this case - to get all future non-breaking
 wants to be more cautious, they can reference a minor version - `1.1` - to get only bug fix updates, not new feature
 updates.
 
-It is also possible to test git branches, although it is not recommended to do this for production because it does not
-have the same performance benefits as official releases. You can use the CDN to address a branch as follows:
-
-`https://cdn.byu.edu/{libraryName}/experimental/{branchName}`
+Additional URL endpoints also exist to access git branches and tags. For that information you'll want to
+[read about aliases](./docs/aliases.md).
 
 # Criteria for hosting
 
