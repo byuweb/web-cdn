@@ -150,6 +150,8 @@ libraries:
   build-test-lib:
     source: github:ThatJoeMoore/byu-web-cdn-demo-lib
     build: circleci
+  product-logos:
+    source: github:byuweb/product-logos
 
 infrastructure:
   environments:
