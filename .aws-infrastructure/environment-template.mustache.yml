@@ -214,7 +214,7 @@ Resources:
       FunctionName: !Sub "${CDNName}-webhooks-${Environment}"
       CodeUri: ./../webhooks/
       Handler: lambda.handler
-      Runtime: nodejs6.10
+      Runtime: nodejs8.10
       MemorySize: 128
       Timeout: 60
       Role:
@@ -350,7 +350,7 @@ Resources:
       FunctionName: !Sub "${CDNName}-edge-enhanced-headers-${Environment}"
       CodeUri: ./../edge-lambdas/enhanced-headers/
       Handler: index.handler
-      Runtime: nodejs6.10
+      Runtime: nodejs8.10
       MemorySize: 128
       Timeout: 20
       Role:
