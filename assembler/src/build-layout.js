@@ -80,7 +80,8 @@ module.exports = async function buildLayout(buildContext, oldManifest, newManife
             sha = 'redirect';
         } else if (it.empty) {
             sha = 'empty';
-        } if (it.hashes) {
+        }
+        if (it.hashes) {
             sha = it.hashes.sha512.hex;
         } else if (it.contents) {
             sha = util.hash('sha512', Buffer.from(it.contents)).hex;
@@ -348,7 +349,7 @@ async function processSourceFile(ver, file, cacheControl) {
     return {
         name: file.name,
         contentPath: from,
-        cdnPath: file.to,
+        cdnPath: sanitizeFileName(file.to),
         type,
         size,
         hashes,
@@ -363,6 +364,36 @@ async function processSourceFile(ver, file, cacheControl) {
         },
         empty: size.unencoded === 0,
     }
+}
+
+const replacements = [
+    [/;/, 'semicolon'],
+    [/,/, 'comma'],
+    [/\?/, 'question'],
+    [/:/, 'colon'],
+    [/@/, 'at'],
+    [/&/, 'and'],
+    [/=/, 'equals'],
+    [/\+/, 'plus'],
+    [/\$/, 'dollar'],
+    [/!/, 'exclamation'],
+    [/\*/, 'asterisk'],
+    [/'/, 'apostrophe'],
+    [/\(/, 'open_paren'],
+    [/\)/, 'close_paren'],
+    [/#/, 'pound']
+];
+
+function sanitizeFileName(name) {
+    //Prefer encoding spaces as _, some things as names, then url-encode ALL THE THINGS! 🧹🙋✊
+    const replaced = replacements.reduce((prev, cur) => {
+        const [pattern, name] = cur;
+        return prev.replace(pattern, `__${name}__`)
+    }, name.replace(/\s/, '_'));
+
+    return encodeURI(
+        replaced
+    );
 }
 
 function processVersionAliasFiles(libId, lib, ver, verPrefix, verFiles) {

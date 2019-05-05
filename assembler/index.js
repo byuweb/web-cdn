@@ -24,15 +24,15 @@ const path = require('path');
 const log = require('winston');
 const axios = require('axios');
 
+log.transport
+
 const loadGithubCredentials = require('./src/util/load-github-credentials');
 const GithubProvider = require('./src/providers/github-provider');
 
 const assembleManifest = require('./src/assemble-manifest');
 const planActions = require('./src/plan-actions');
 const downloadSources = require('./src/download-sources');
-const assembleArtifacts = require('./src/copy-resources');
-const buildMeta = require('./src/build-meta');
-const {uploadFiles2} = require('./src/upload-files');
+const {uploadFiles} = require('./src/upload-files');
 const buildLayout = require('./src/build-layout');
 const constants = require('./src/constants');
 const {NoopMessager, SlackMessager} = require('./src/messagers');
@@ -120,7 +120,7 @@ module.exports = async function cdnAssembler(config, targetBucket, opts) {
         // const versionManifests = await buildMeta(newManifest, assembledDir);
         //
         log.info("----- Uploading Files -----");
-        await uploadFiles2(buildContext, filesystem, actions, newManifest);
+        await uploadFiles(buildContext, filesystem, actions, newManifest);
         // await uploadFiles(oldManifest, newManifest, versionManifests, actions, targetBucket, assembledDir, cdnHost, dryRun);
 
         await messages.sendSuccess(buildContext);
