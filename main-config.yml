@@ -88,7 +88,10 @@ libraries:
 #                  to: web-component-polyfills.min.js
 #                - regex: webcomponents-lite.js
 #                  to: web-component-polyfills.js
-
+  web-component-polyfills-v2
+    source: github:byuweb/web-component-polyfills-v2
+    configuration:
+      type: 'javascript'
   shared-icons:
     configuration:
       type: 'images'
