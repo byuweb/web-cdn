@@ -89,7 +89,7 @@ libraries:
 #                - regex: webcomponents-lite.js
 #                  to: web-component-polyfills.js
 
-  web-component-polyfills-v2
+  web-component-polyfills-v2:
     source: github:byuweb/web-component-polyfills-v2
     configuration:
       type: 'javascript'
