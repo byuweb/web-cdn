@@ -2,12 +2,6 @@
 cdn:
   name: web-community-cdn
 libraries:
-  2017-core-components:
-    source: github:byuweb/byu-theme-components
-    configuration:
-      type: 'web-component'
-      show_in_directory: false
-      deprecated: 'Please use byu-theme-components instead'
   byu-theme-components:
     source: github:byuweb/byu-theme-components
     configuration:
@@ -38,6 +32,9 @@ libraries:
         - lib: theme-fonts
           version: latest
           file: ringside/fonts.css
+        - lib: theme-fonts
+          version: latest
+          file: public-sans/fonts.css
         byu-theme-components.min.js:
         - ./components.min.js
         - lib: shared-icons
@@ -46,6 +43,9 @@ libraries:
         - lib: theme-fonts
           version: latest
           file: ringside/fonts.css
+        - lib: theme-fonts
+          version: latest
+          file: public-sans/fonts.css
   byu-card:
     source: github:byuweb/byu-card
     configuration:
