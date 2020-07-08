@@ -29,7 +29,7 @@ The example configuration will include everything in your repository. Most often
 Usually, we have a set of source files and a set of concatenated, minified files we want to actually serve.
 
 Currently, the CDN requires that these files be checked into your source repository 
-(see [this issue](https://github.com/byuweb/web-cdn/issues/18) for the work needed to change that). However,
+(see [this issue](https://github.com/byu-oit/web-cdn/issues/18) for the work needed to change that). However,
 we probably don't want the source files to be in the CDN, just the assembled files.  So, the CDN allows us to
 decide which files to include.
 
@@ -157,10 +157,10 @@ of all of the calls made to it.
 # Create a pull request in the CDN repository
 
 Now, we need to let the CDN know that your repository exists.  The CDN is controlled by a central configuration file,
-[`main-config.yml`](https://github.com/byuweb/web-cdn/blob/master/main-config.yml).  You'll need to create a fork
+[`main-config.yml`](https://github.com/byu-oit/web-cdn/blob/master/main-config.yml).  You'll need to create a fork
 of the CDN repository in order to modify it.
 
-The easiest way to fork and modify the file is using the Github UI. Click [this link](https://github.com/byuweb/web-cdn/edit/master/main-config.yml)
+The easiest way to fork and modify the file is using the Github UI. Click [this link](https://github.com/byu-oit/web-cdn/edit/master/main-config.yml)
 or navigate to the file and click the edit button:
 
 ![Edit button](images/edit-main-config.png)

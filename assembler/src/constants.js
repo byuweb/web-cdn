@@ -53,7 +53,7 @@ module.exports = freezer({
     },
     CDN: {
         VERSION: packageVersion,
-        GITHUB_ORG: 'byuweb',
+        GITHUB_ORG: 'byu-oit',
         GITHUB_REPO: 'web-cdn',
         CONTENT_BRANCH: 'content',
         USER_AGENT: 'BYU-Web-Community-CDN-Builder ' + packageVersion,

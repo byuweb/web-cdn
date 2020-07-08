@@ -28,7 +28,7 @@ basic_usage:
     </div>
     <byu-footer></byu-footer>
 show_in_directory: false #defaults to true
-docs: https://github.com/byuweb/2017-components #This is a URL to documentation about how to use the library
+docs: https://github.com/byu-oit/byu-theme-components #This is a URL to documentation about how to use the library
 
 build:
   provider: circleci

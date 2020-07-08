@@ -21,7 +21,7 @@ const app = require('./webhooks');
 
 app({
     assemblerPipelineName: 'test',
-    mainConfigRepo: 'byuweb/web-cdn',
+    mainConfigRepo: 'byu-oit/web-cdn',
     mainConfigBranch: 'master',
     skipCallerValidation: true,
 }).listen(8000, function() {

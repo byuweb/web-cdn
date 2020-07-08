@@ -4,8 +4,8 @@ env:
   variables:
     CDN_NAME: web-community-cdn
     ACCOUNT_STACK_NAME: web-community-cdn-account
-    CONFIG_REPO: byuweb/web-cdn
-    EXTRA_TAGS: "data-sensitivity=public team=BYU_Web_Community_Engineering_Group if-questions-contact=Joseph_Moore+James_Speirs+Sherwin_Harris"
+    CONFIG_REPO: byu-oit/web-cdn
+    EXTRA_TAGS: "data-sensitivity=public repo=https://github.com/byu-oit/web-cdn"
 
 phases:
   install:

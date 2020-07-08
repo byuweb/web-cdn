@@ -168,7 +168,7 @@ module.exports = SlackMessager;
 // m.addedLib({
 //     libId: 'byu-theme-components',
 //     name: 'BYU Theme Components',
-//     libLink: 'https://github.com/byuweb/byu-theme-components'
+//     libLink: 'https://github.com/byu-oit/byu-theme-components'
 // });
 // m.updatedLib({libId: 'something-else', name: 'stuff', libLink: 'https://example.com'});
 //

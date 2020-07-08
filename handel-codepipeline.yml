@@ -8,7 +8,7 @@ pipelines:
     phases:
       - type: github
         name: GitHub
-        owner: byuweb
+        owner: byu-oit
         repo: web-cdn
         branch: master
       - type: codebuild
@@ -29,7 +29,7 @@ pipelines:
     phases:
       - type: github
         name: GitHub
-        owner: byuweb
+        owner: byu-oit
         repo: web-cdn
         branch: beta
       - type: codebuild
@@ -50,7 +50,7 @@ pipelines:
     phases:
       - type: github
         name: GitHub
-        owner: byuweb
+        owner: byu-oit
         repo: web-cdn
         branch: dev
       - type: codebuild
