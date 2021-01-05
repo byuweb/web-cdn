@@ -17,7 +17,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "aws-sdk": "^2.89.0",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "chai-fs": "^1.0.0",
     "chalk": "^2.4.1",
     "child-process-promise": "^2.2.1",
